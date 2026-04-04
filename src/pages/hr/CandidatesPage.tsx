@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { candidates, type ExtractStatus, type EmploymentTag } from "@/lib/mock-data";
-import { ExtractStatusBadge, EmploymentBadge } from "@/components/StatusBadges";
-import PageHeader from "@/components/PageHeader";
+import { Input } from "@/shared/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/components/ui/table";
+import { candidates, type ExtractStatus, type EmploymentTag } from "@/shared/lib/mock-data";
+import { ExtractStatusBadge, EmploymentBadge } from "@/shared/components/StatusBadges";
+import PageHeader from "@/shared/components/PageHeader";
 import { Search } from "lucide-react";
 
 export default function CandidatesPage() {

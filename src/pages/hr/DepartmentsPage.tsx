@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { departments } from "@/lib/mock-data";
-import PageHeader from "@/components/PageHeader";
+import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
+import { departments } from "@/shared/lib/mock-data";
+import PageHeader from "@/shared/components/PageHeader";
 import { Building2, Mail, Phone, User } from "lucide-react";
 
 export default function DepartmentsPage() {

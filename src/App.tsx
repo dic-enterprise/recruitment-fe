@@ -1,9 +1,9 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { Toaster } from "@/components/ui/toaster";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import AppLayout from "@/components/AppLayout";
+import { Toaster as Sonner } from "@/shared/components/ui/sonner";
+import { Toaster } from "@/shared/components/ui/toaster";
+import { TooltipProvider } from "@/shared/components/ui/tooltip";
+import AppLayout from "@/shared/components/AppLayout";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import DashboardPage from "./pages/hr/DashboardPage";

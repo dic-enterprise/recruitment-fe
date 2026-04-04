@@ -1,7 +1,7 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { getActiveJobs, candidates, cvMatches, jobs } from "@/lib/mock-data";
+import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
+import { getActiveJobs, candidates, cvMatches, jobs } from "@/shared/lib/mock-data";
 import { Briefcase, Users, TrendingUp, AlertTriangle, CheckCircle, Clock } from "lucide-react";
-import PageHeader from "@/components/PageHeader";
+import PageHeader from "@/shared/components/PageHeader";
 
 function StatCard({ title, value, subtitle, icon: Icon, color }: { title: string; value: string | number; subtitle?: string; icon: React.ElementType; color: string }) {
   return (

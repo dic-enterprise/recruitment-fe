@@ -1,9 +1,9 @@
 import { useParams, Link } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { candidates, getMatchesForCandidate } from "@/lib/mock-data";
-import { ExtractStatusBadge, EmploymentBadge, ScoreBadge } from "@/components/StatusBadges";
-import PageHeader from "@/components/PageHeader";
+import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
+import { Button } from "@/shared/components/ui/button";
+import { candidates, getMatchesForCandidate } from "@/shared/lib/mock-data";
+import { ExtractStatusBadge, EmploymentBadge, ScoreBadge } from "@/shared/components/StatusBadges";
+import PageHeader from "@/shared/components/PageHeader";
 import { ArrowLeft, Mail, Phone, FileText, AlertCircle } from "lucide-react";
 
 export default function CandidateDetailPage() {

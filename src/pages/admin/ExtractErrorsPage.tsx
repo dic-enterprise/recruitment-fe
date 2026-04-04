@@ -1,11 +1,11 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { getFailedExtracts } from "@/lib/mock-data";
-import { ExtractStatusBadge } from "@/components/StatusBadges";
-import PageHeader from "@/components/PageHeader";
+import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
+import { Button } from "@/shared/components/ui/button";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/components/ui/table";
+import { getFailedExtracts } from "@/shared/lib/mock-data";
+import { ExtractStatusBadge } from "@/shared/components/StatusBadges";
+import PageHeader from "@/shared/components/PageHeader";
 import { AlertTriangle, RotateCcw } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/shared/hooks/use-toast";
 
 export default function ExtractErrorsPage() {
   const { toast } = useToast();

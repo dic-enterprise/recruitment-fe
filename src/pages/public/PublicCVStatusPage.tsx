@@ -1,7 +1,7 @@
 import { useParams } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { candidates } from "@/lib/mock-data";
-import { ExtractStatusBadge } from "@/components/StatusBadges";
+import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
+import { candidates } from "@/shared/lib/mock-data";
+import { ExtractStatusBadge } from "@/shared/components/StatusBadges";
 import { FileText, AlertCircle } from "lucide-react";
 
 export default function PublicCVStatusPage() {

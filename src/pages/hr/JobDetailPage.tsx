@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { jobs, candidates, getMatchesForJob, isAvailableCandidate, type MatchQueueItem } from "@/lib/mock-data";
-import { JobStatusBadge, ScoreBadge, QueueStatusBadge, ExtractStatusBadge, EmploymentBadge } from "@/components/StatusBadges";
-import PageHeader from "@/components/PageHeader";
+import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
+import { Button } from "@/shared/components/ui/button";
+import { Checkbox } from "@/shared/components/ui/checkbox";
+import { jobs, candidates, getMatchesForJob, isAvailableCandidate, type MatchQueueItem } from "@/shared/lib/mock-data";
+import { JobStatusBadge, ScoreBadge, QueueStatusBadge, ExtractStatusBadge, EmploymentBadge } from "@/shared/components/StatusBadges";
+import PageHeader from "@/shared/components/PageHeader";
 import { ArrowLeft, Play, Loader2 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/shared/hooks/use-toast";
 
 export default function JobDetailPage() {
   const { jobId } = useParams();

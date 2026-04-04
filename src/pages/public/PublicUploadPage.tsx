@@ -1,12 +1,12 @@
 import { useState, useCallback } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { ExtractStatusBadge } from "@/components/StatusBadges";
-import type { ExtractStatus } from "@/lib/mock-data";
+import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
+import { Button } from "@/shared/components/ui/button";
+import { Input } from "@/shared/components/ui/input";
+import { Label } from "@/shared/components/ui/label";
+import { ExtractStatusBadge } from "@/shared/components/StatusBadges";
+import type { ExtractStatus } from "@/shared/lib/mock-data";
 import { Upload, FileText, CheckCircle, AlertCircle } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/shared/hooks/use-toast";
 
 const ALLOWED_TYPES = [
   "application/pdf",

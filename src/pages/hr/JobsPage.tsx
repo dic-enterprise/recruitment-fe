@@ -1,14 +1,14 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { jobs, departments, appendJob, type Job, type JobStatus } from "@/lib/mock-data";
-import { JobStatusBadge } from "@/components/StatusBadges";
-import PageHeader from "@/components/PageHeader";
-import { CreateJobModal } from "@/components/hr/CreateJobDialog";
-import useModal from "@/hooks/useModal";
+import { Input } from "@/shared/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/components/ui/table";
+import { Button } from "@/shared/components/ui/button";
+import { jobs, departments, appendJob, type Job, type JobStatus } from "@/shared/lib/mock-data";
+import { JobStatusBadge } from "@/shared/components/StatusBadges";
+import PageHeader from "@/shared/components/PageHeader";
+import { CreateJobModal } from "@/shared/components/hr/CreateJobDialog";
+import useModal from "@/shared/hooks/useModal";
 import { Plus, Search } from "lucide-react";
 
 export default function JobsPage() {
