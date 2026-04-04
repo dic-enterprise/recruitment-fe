@@ -3,17 +3,22 @@ import { Link } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { jobs, departments, type JobStatus } from "@/lib/mock-data";
+import { Button } from "@/components/ui/button";
+import { jobs, departments, appendJob, type Job, type JobStatus } from "@/lib/mock-data";
 import { JobStatusBadge } from "@/components/StatusBadges";
 import PageHeader from "@/components/PageHeader";
-import { Search } from "lucide-react";
+import { CreateJobModal } from "@/components/hr/CreateJobDialog";
+import useModal from "@/hooks/useModal";
+import { Plus, Search } from "lucide-react";
 
 export default function JobsPage() {
+  const [modalNode, openModal] = useModal();
+  const [jobList, setJobList] = useState<Job[]>(() => [...jobs]);
   const [statusFilter, setStatusFilter] = useState<JobStatus | "ALL">("ALL");
   const [deptFilter, setDeptFilter] = useState<string>("ALL");
   const [keyword, setKeyword] = useState("");
 
-  const filtered = jobs.filter(j => {
+  const filtered = jobList.filter(j => {
     if (statusFilter !== "ALL" && j.status !== statusFilter) return false;
     if (deptFilter !== "ALL" && j.departmentId !== deptFilter) return false;
     if (keyword) {
@@ -23,9 +28,31 @@ export default function JobsPage() {
     return true;
   });
 
+  const openCreateJob = () => {
+    void openModal(close => (
+      <CreateJobModal
+        close={close}
+        onJobCreated={job => {
+          appendJob(job);
+          setJobList([...jobs]);
+        }}
+      />
+    ));
+  };
+
   return (
     <div>
-      <PageHeader title="Jobs" description="Manage job postings" />
+      {modalNode}
+      <PageHeader
+        title="Jobs"
+        description="Manage job postings"
+        actions={
+          <Button onClick={openCreateJob}>
+            <Plus className="mr-2 h-4 w-4" />
+            Create job
+          </Button>
+        }
+      />
 
       <div className="mb-4 flex flex-wrap gap-3">
         <div className="relative flex-1 min-w-[200px]">

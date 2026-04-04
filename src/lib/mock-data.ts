@@ -29,6 +29,11 @@ export interface Job {
   createdAt: string;
   matchCount: number;
   highMatchCount: number;
+  location?: string;
+  workplaceHybrid?: boolean;
+  employmentFullTime?: boolean;
+  recruitmentUrgency?: "NORMAL" | "URGENT";
+  skills?: string[];
 }
 
 export interface Candidate {
@@ -121,6 +126,10 @@ export function getMatchesForCandidate(candidateId: string): CVMatch[] {
 
 export function getActiveJobs(): Job[] {
   return jobs.filter(j => j.status === "ACTIVE");
+}
+
+export function appendJob(job: Job): void {
+  jobs.push(job);
 }
 
 export function getFailedExtracts(): Candidate[] {
