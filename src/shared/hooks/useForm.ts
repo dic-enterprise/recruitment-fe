@@ -31,8 +31,9 @@ export default function useForm<Values extends FormikValues = FormikValues>(conf
   return {
     ...formik,
     updateFieldValue,
+    isFormFieldInvalid,
     getFormErrorMessage,
-    checkErrorAndSubmit
+    checkErrorAndSubmit,
   };
 }
 

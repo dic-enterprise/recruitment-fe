@@ -7,7 +7,7 @@ import AppLayout from "@/shared/components/AppLayout";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import DashboardPage from "./pages/hr/DashboardPage";
-import DepartmentsPage from "./pages/hr/DepartmentsPage";
+import DepartmentsPage from "./pages/hr/department/DepartmentsPage.tsx";
 import DepartmentDetailPage from "./pages/hr/DepartmentDetailPage";
 import JobsPage from "./pages/hr/JobsPage";
 import JobDetailPage from "./pages/hr/JobDetailPage";

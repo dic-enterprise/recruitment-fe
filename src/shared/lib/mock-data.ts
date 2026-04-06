@@ -77,7 +77,7 @@ export const departments: Department[] = [
   { id: "dept-4", code: "FIN", name: "Finance", manager: "Hoàng Anh Dũng", contacts: [{ name: "Bùi Thanh Hà", email: "ha.bui@company.com" }], jobCount: 1 },
 ];
 
-export const jobs: Job[] = [
+const jobsSeed: Job[] = [
   { id: "job-1", departmentId: "dept-1", departmentName: "Engineering", title: "Senior Frontend Developer", salary: "25-40M VND", requirements: "5+ years React/TypeScript experience. Strong understanding of modern frontend architecture, testing, and performance optimization.", status: "ACTIVE", createdAt: "2024-01-15", matchCount: 12, highMatchCount: 3 },
   { id: "job-2", departmentId: "dept-1", departmentName: "Engineering", title: "Backend Developer (Java)", salary: "20-35M VND", requirements: "3+ years Java/Spring Boot. Experience with microservices, PostgreSQL, and cloud platforms.", status: "ACTIVE", createdAt: "2024-01-20", matchCount: 8, highMatchCount: 2 },
   { id: "job-3", departmentId: "dept-2", departmentName: "Marketing", title: "Digital Marketing Specialist", salary: "15-25M VND", requirements: "2+ years digital marketing. Google Ads, Facebook Ads, SEO/SEM, analytics.", status: "ACTIVE", createdAt: "2024-02-01", matchCount: 5, highMatchCount: 1 },
@@ -86,6 +86,78 @@ export const jobs: Job[] = [
   { id: "job-6", departmentId: "dept-3", departmentName: "Human Resources", title: "HR Generalist", salary: "18-28M VND", requirements: "3+ years HR experience. Knowledge of Vietnamese labor law.", status: "ACTIVE", createdAt: "2024-02-10", matchCount: 3, highMatchCount: 1 },
   { id: "job-7", departmentId: "dept-4", departmentName: "Finance", title: "Financial Analyst", salary: "20-32M VND", requirements: "CFA preferred. Financial modeling, Excel, data analysis.", status: "ACTIVE", createdAt: "2024-02-15", matchCount: 0, highMatchCount: 0 },
 ];
+
+const FAKE_JOB_TITLES = [
+  "Junior Frontend Developer",
+  "Staff Engineer (Platform)",
+  "Mobile Engineer (Flutter)",
+  "QA Automation Engineer",
+  "Data Engineer",
+  "Machine Learning Engineer",
+  "Security Engineer",
+  "Technical Writer",
+  "Engineering Manager",
+  "Solutions Architect",
+  "Product Designer",
+  "UX Researcher",
+  "Brand Manager",
+  "Performance Marketing Lead",
+  "Social Media Specialist",
+  "CRM Specialist",
+  "Event Marketing Coordinator",
+  "SEO Lead",
+  "Talent Acquisition Partner",
+  "HR Business Partner",
+  "L&D Specialist",
+  "Compensation Analyst",
+  "Payroll Specialist",
+  "Corporate Accountant",
+  "FP&A Analyst",
+  "Internal Auditor",
+  "Treasury Analyst",
+  "Tax Associate",
+  "Full-stack Developer (Node)",
+  "Site Reliability Engineer",
+  "Blockchain Developer",
+  "Game Client Programmer",
+  "Embedded Software Engineer",
+  "Sales Engineer",
+  "Customer Success Manager",
+  "IT Support Lead",
+  "Scrum Master",
+  "Product Owner",
+  "Business Analyst",
+  "Office Administrator",
+  "Legal Counsel (Commercial)",
+  "Procurement Specialist",
+  "Graphic Designer",
+] as const;
+
+const FAKE_STATUS_ROTATE: JobStatus[] = ["ACTIVE", "ACTIVE", "ACTIVE", "CLOSED", "ARCHIVED"];
+
+function buildFakeJobs(): Job[] {
+  return Array.from({ length: 43 }, (_, i) => {
+    const n = i + 8;
+    const dept = departments[i % departments.length];
+    const title = FAKE_JOB_TITLES[i] ?? `Open Position #${n}`;
+    const lo = 12 + (i % 14);
+    const hi = lo + 8 + (i % 12);
+    return {
+      id: `job-${n}`,
+      departmentId: dept.id,
+      departmentName: dept.name,
+      title,
+      salary: `${lo}-${hi}M VND`,
+      requirements: "Mock JD for list / scroll testing.",
+      status: FAKE_STATUS_ROTATE[i % FAKE_STATUS_ROTATE.length],
+      createdAt: `2024-${String((i % 11) + 2).padStart(2, "0")}-${String((i % 26) + 1).padStart(2, "0")}`,
+      matchCount: (i * 3) % 22,
+      highMatchCount: (i * 2) % 7,
+    };
+  });
+}
+
+export const jobs: Job[] = [...jobsSeed, ...buildFakeJobs()];
 
 export const candidates: Candidate[] = [
   { id: "cand-1", name: "Nguyễn Minh Đức", email: "duc.nguyen@gmail.com", phone: "0901111111", cvFileName: "NguyenMinhDuc_CV.pdf", extractStatus: "COMPLETE", employmentTag: "CHUA_NHAN_VIEC", uploadedAt: "2024-01-18", skills: ["React", "TypeScript", "Node.js", "GraphQL"], experience: "6 years frontend development" },
@@ -130,6 +202,13 @@ export function getActiveJobs(): Job[] {
 
 export function appendJob(job: Job): void {
   jobs.push(job);
+}
+
+export function updateJob(jobId: string, next: Job): boolean {
+  const i = jobs.findIndex(j => j.id === jobId);
+  if (i === -1) return false;
+  jobs[i] = next;
+  return true;
 }
 
 export function getFailedExtracts(): Candidate[] {
