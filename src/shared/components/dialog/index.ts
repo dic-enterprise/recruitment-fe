@@ -6,4 +6,4 @@ export {
   type BaseHeaderProps,
   type BaseActionItem,
   type BaseActionProps,
-} from "./BaseDialog.tsx";
+} from './BaseDialog.tsx';

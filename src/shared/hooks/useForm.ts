@@ -1,10 +1,14 @@
-import { FormikConfig, FormikErrors, FormikValues } from "formik/dist/types";
-import { useFormik } from "formik";
+import { FormikConfig, FormikErrors, FormikValues } from 'formik/dist/types';
+import { useFormik } from 'formik';
 
 export default function useForm<Values extends FormikValues = FormikValues>(config: FormikConfig<Values>) {
   const formik = useFormik(config);
 
-  async function updateFieldValue<T extends keyof Values>(fieldName: T, value: Values[T], shouldValidate?: boolean): Promise<FormikErrors<Values> | void> {
+  async function updateFieldValue<T extends keyof Values>(
+    fieldName: T,
+    value: Values[T],
+    shouldValidate?: boolean,
+  ): Promise<FormikErrors<Values> | void> {
     return formik.setFieldValue(fieldName as string, value, shouldValidate);
   }
 
@@ -36,4 +40,3 @@ export default function useForm<Values extends FormikValues = FormikValues>(conf
     checkErrorAndSubmit,
   };
 }
-
