@@ -1,18 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { Button } from '@/shared/components/ui/button';
 import { Checkbox } from '@/shared/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs';
-import {
-  jobs,
-  candidates,
-  getMatchesForJob,
-  isAvailableCandidate,
-  updateJob,
-  type Job,
-  type MatchQueueItem,
-} from '@/shared/lib/mock-data';
+import { jobService, candidateService, matchService } from '@/shared/lib/api-services';
 import {
   JobStatusBadge,
   ScoreBadge,
@@ -24,28 +17,71 @@ import PageHeader from '@/shared/components/PageHeader';
 import { EditJobForm } from '@/shared/components/hr/EditJobForm';
 import { ArrowLeft, Play, Loader2 } from 'lucide-react';
 import { useToast } from '@/shared/hooks/use-toast';
+import type { Job } from '@/shared/types/api';
 
 export default function JobDetailPage() {
   const { jobId } = useParams();
   const { toast } = useToast();
-  const [job, setJob] = useState<Job | undefined>(() => (jobId ? jobs.find((j) => j.id === jobId) : undefined));
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    if (!jobId) {
-      setJob(undefined);
-      return;
-    }
-    setJob(jobs.find((j) => j.id === jobId));
-  }, [jobId]);
+  const { data: job, isLoading: jobLoading } = useQuery({
+    queryKey: ['job', jobId],
+    queryFn: () => jobService.getById(jobId!),
+    enabled: !!jobId,
+  });
+
+  const { data: matches, isLoading: matchesLoading } = useQuery({
+    queryKey: ['job-matches', jobId],
+    queryFn: () => matchService.getByJobId(jobId!),
+    enabled: !!jobId,
+  });
+
+  const { data: candidates } = useQuery({
+    queryKey: ['available-candidates'],
+    queryFn: () => candidateService.getAll({ extractStatus: 'COMPLETE', employmentTag: 'CHUA_NHAN_VIEC' }),
+  });
+
+  const { data: queueItems } = useQuery({
+    queryKey: ['match-queue'],
+    queryFn: matchService.getQueue,
+    refetchInterval: 5000, // Tăng lên 5 giây
+    retry: false, // Không retry nếu API này lỗi (tránh spam khi backend chưa có)
+  });
+
+  const triggerMatchMutation = useMutation({
+    mutationFn: (candidateIds: string[]) => matchService.triggerMatch(jobId!, candidateIds),
+    onSuccess: () => {
+      toast({ title: 'Đã bắt đầu', description: 'Quá trình so khớp đã được đưa vào hàng đợi.' });
+      queryClient.invalidateQueries({ queryKey: ['match-queue'] });
+      setSelectedCandidates(new Set());
+    },
+    onError: () => {
+      toast({ title: 'Lỗi', description: 'Không thể bắt đầu quá trình so khớp.', variant: 'destructive' });
+    },
+  });
+
+  const updateJobMutation = useMutation({
+    mutationFn: (next: Partial<Job>) => jobService.update(jobId!, next),
+    onSuccess: () => {
+      toast({ title: 'Đã lưu', description: 'Thông tin tin tuyển dụng đã được cập nhật.' });
+      queryClient.invalidateQueries({ queryKey: ['job', jobId] });
+    },
+  });
 
   const [selectedCandidates, setSelectedCandidates] = useState<Set<string>>(new Set());
-  const [queueItems, setQueueItems] = useState<MatchQueueItem[]>([]);
-  const [isEnqueuing, setIsEnqueuing] = useState(false);
+
+  if (jobLoading || matchesLoading) {
+    return (
+      <div className='flex h-64 items-center justify-center'>
+        <Loader2 className='h-8 w-8 animate-spin text-primary' />
+      </div>
+    );
+  }
 
   if (!job) return <div className='p-8 text-center text-muted-foreground'>Job not found</div>;
 
-  const matches = getMatchesForJob(job.id);
-  const availableCandidates = candidates.filter(isAvailableCandidate);
+  const matchResults = matches || [];
+  const availableCandidates = candidates || [];
   const isActive = job.status === 'ACTIVE';
 
   const toggleCandidate = (id: string) => {
@@ -63,52 +99,20 @@ export default function JobDetailPage() {
   const handleStart = () => {
     if (selectedCandidates.size === 0) {
       toast({
-        title: 'No candidates selected',
-        description: 'Please select at least one available candidate.',
+        title: 'Chưa chọn ứng viên',
+        description: 'Vui lòng chọn ít nhất một ứng viên để bắt đầu so khớp.',
         variant: 'destructive',
       });
       return;
     }
-
-    const alreadyQueued = new Set(queueItems.map((q) => q.candidateId));
-    const newIds = [...selectedCandidates].filter((id) => !alreadyQueued.has(id));
-
-    if (newIds.length === 0) {
-      toast({ title: 'Already enqueued', description: 'All selected candidates are already in the matching queue.' });
-      return;
-    }
-
-    setIsEnqueuing(true);
-    const newItems: MatchQueueItem[] = newIds.map((id) => ({
-      candidateId: id,
-      candidateName: candidates.find((c) => c.id === id)?.name || '',
-      status: 'queued' as const,
-    }));
-
-    setQueueItems((prev) => [...newItems, ...prev]);
-
-    setTimeout(() => {
-      setQueueItems((prev) =>
-        prev.map((item) => (newIds.includes(item.candidateId) ? { ...item, status: 'processing' } : item)),
-      );
-    }, 1500);
-
-    setTimeout(() => {
-      setQueueItems((prev) =>
-        prev.map((item) => (newIds.includes(item.candidateId) ? { ...item, status: 'done' } : item)),
-      );
-      setIsEnqueuing(false);
-      toast({ title: 'Matching complete', description: `${newIds.length} candidate(s) processed.` });
-    }, 4000);
-
-    setSelectedCandidates(new Set());
+    triggerMatchMutation.mutate([...selectedCandidates]);
   };
 
   const handleJobSave = (next: Job) => {
-    updateJob(next.id, next);
-    setJob(jobs.find((j) => j.id === next.id) ?? next);
-    toast({ title: 'Đã lưu', description: 'Thông tin tin tuyển dụng đã được cập nhật.' });
+    updateJobMutation.mutate(next);
   };
+
+  const currentQueueForJob = queueItems?.filter(q => q.status !== 'done') || [];
 
   return (
     <div className='flex h-full min-h-0 flex-1 flex-col'>
@@ -155,8 +159,8 @@ export default function JobDetailPage() {
                     <Button variant='outline' size='sm' onClick={selectAllAvailable}>
                       Select All Available ({availableCandidates.length})
                     </Button>
-                    <Button size='sm' onClick={handleStart} disabled={isEnqueuing || selectedCandidates.size === 0}>
-                      {isEnqueuing ? (
+                    <Button size='sm' onClick={handleStart} disabled={triggerMatchMutation.isPending || selectedCandidates.size === 0}>
+                      {triggerMatchMutation.isPending ? (
                         <>
                           <Loader2 className='mr-2 h-4 w-4 animate-spin' />
                           Processing...
@@ -174,7 +178,7 @@ export default function JobDetailPage() {
               <CardContent>
                 <div className='max-h-64 space-y-2 overflow-y-auto'>
                   {availableCandidates.map((c) => {
-                    const alreadyQueued = queueItems.some((q) => q.candidateId === c.id);
+                    const alreadyQueued = currentQueueForJob.some((q) => q.candidateId === c.id);
                     return (
                       <label
                         key={c.id}
@@ -195,19 +199,22 @@ export default function JobDetailPage() {
                       </label>
                     );
                   })}
+                  {availableCandidates.length === 0 && (
+                    <p className='text-sm text-muted-foreground text-center py-4'>No available candidates to match</p>
+                  )}
                 </div>
               </CardContent>
             </Card>
           )}
 
-          {queueItems.length > 0 && (
+          {currentQueueForJob.length > 0 && (
             <Card>
               <CardHeader>
                 <CardTitle className='text-base'>Matching Queue</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className='space-y-2'>
-                  {queueItems.map((item) => (
+                  {currentQueueForJob.map((item) => (
                     <div key={item.candidateId} className='flex items-center justify-between rounded-lg border p-3'>
                       <span className='text-sm font-medium'>{item.candidateName}</span>
                       <QueueStatusBadge status={item.status} />
@@ -220,14 +227,14 @@ export default function JobDetailPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle className='text-base'>Match Results ({matches.length})</CardTitle>
+              <CardTitle className='text-base'>Match Results ({matchResults.length})</CardTitle>
             </CardHeader>
             <CardContent>
-              {matches.length === 0 ? (
+              {matchResults.length === 0 ? (
                 <p className='py-4 text-center text-sm text-muted-foreground'>No match results yet</p>
               ) : (
                 <div className='space-y-2'>
-                  {[...matches]
+                  {[...matchResults]
                     .sort((a, b) => b.score - a.score)
                     .map((m) => (
                       <Link

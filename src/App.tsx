@@ -1,6 +1,6 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider, QueryCache, MutationCache } from '@tanstack/react-query';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
-import { Toaster as Sonner } from '@/shared/components/ui/sonner';
+import { Toaster as Sonner, toast } from '@/shared/components/ui/sonner';
 import { Toaster } from '@/shared/components/ui/toaster';
 import { TooltipProvider } from '@/shared/components/ui/tooltip';
 import AppLayout from '@/shared/components/AppLayout';
@@ -17,7 +17,27 @@ import PublicUploadPage from './pages/public/PublicUploadPage';
 import PublicCVStatusPage from './pages/public/PublicCVStatusPage';
 import ExtractErrorsPage from './pages/admin/ExtractErrorsPage';
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      retry: false, // Tắt hoàn toàn retry theo yêu cầu
+      staleTime: 1000 * 30,
+    },
+  },
+  queryCache: new QueryCache({
+    onError: (error: any) => {
+      // Hiển thị toast lỗi cho tất cả GET requests
+      toast.error(error.response?.data?.message || error.message || 'Lỗi kết nối server');
+    },
+  }),
+  mutationCache: new MutationCache({
+    onError: (error: any) => {
+      // Hiển thị toast lỗi cho tất cả POST/PUT/DELETE requests
+      toast.error(error.response?.data?.message || error.message || 'Thao tác thất bại');
+    },
+  }),
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>

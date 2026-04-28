@@ -1,18 +1,38 @@
 import { useParams, Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { Button } from '@/shared/components/ui/button';
-import { departments, jobs } from '@/shared/lib/mock-data';
+import { departmentService, jobService } from '@/shared/lib/api-services';
 import { JobStatusBadge } from '@/shared/components/StatusBadges';
 import PageHeader from '@/shared/components/PageHeader';
-import { ArrowLeft, Mail, Phone, User } from 'lucide-react';
+import { ArrowLeft, Mail, Phone, User, Loader2 } from 'lucide-react';
 
 export default function DepartmentDetailPage() {
   const { departmentId } = useParams();
-  const dept = departments.find((d) => d.id === departmentId);
+
+  const { data: dept, isLoading: deptLoading } = useQuery({
+    queryKey: ['department', departmentId],
+    queryFn: () => departmentService.getById(departmentId!),
+    enabled: !!departmentId,
+  });
+
+  const { data: deptJobs, isLoading: jobsLoading } = useQuery({
+    queryKey: ['department-jobs', departmentId],
+    queryFn: () => jobService.getAll({ departmentId: departmentId! }),
+    enabled: !!departmentId,
+  });
+
+  if (deptLoading || jobsLoading) {
+    return (
+      <div className='flex h-64 items-center justify-center'>
+        <Loader2 className='h-8 w-8 animate-spin text-primary' />
+      </div>
+    );
+  }
 
   if (!dept) return <div className='p-8 text-center text-muted-foreground'>Department not found</div>;
 
-  const deptJobs = jobs.filter((j) => j.departmentId === dept.id);
+  const jobsList = deptJobs || [];
 
   return (
     <div>
@@ -66,14 +86,14 @@ export default function DepartmentDetailPage() {
 
         <Card className='lg:col-span-2'>
           <CardHeader>
-            <CardTitle className='text-base'>Jobs ({deptJobs.length})</CardTitle>
+            <CardTitle className='text-base'>Jobs ({jobsList.length})</CardTitle>
           </CardHeader>
           <CardContent>
-            {deptJobs.length === 0 ? (
+            {jobsList.length === 0 ? (
               <p className='text-sm text-muted-foreground'>No jobs in this department</p>
             ) : (
               <div className='space-y-2'>
-                {deptJobs.map((job) => (
+                {jobsList.map((job) => (
                   <Link
                     key={job.id}
                     to={`/hr/jobs/${job.id}`}

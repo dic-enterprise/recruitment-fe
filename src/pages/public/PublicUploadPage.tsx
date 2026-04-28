@@ -1,12 +1,14 @@
 import { useState, useCallback } from 'react';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
 import { Label } from '@/shared/components/ui/label';
 import { ExtractStatusBadge } from '@/shared/components/StatusBadges';
-import type { ExtractStatus } from '@/shared/lib/mock-data';
-import { Upload, FileText, CheckCircle, AlertCircle } from 'lucide-react';
+import { candidateService } from '@/shared/lib/api-services';
+import { Upload, FileText, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import { useToast } from '@/shared/hooks/use-toast';
+import type { Candidate } from '@/shared/types/api';
 
 const ALLOWED_TYPES = [
   'application/pdf',
@@ -20,9 +22,29 @@ export default function PublicUploadPage() {
   const [file, setFile] = useState<File | null>(null);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [submitted, setSubmitted] = useState(false);
-  const [extractStatus, setExtractStatus] = useState<ExtractStatus>('PENDING');
-  const [error, setError] = useState<string | null>(null);
+  const [candidateId, setCandidateId] = useState<string | null>(null);
+
+  const uploadMutation = useMutation({
+    mutationFn: (f: File) => candidateService.uploadCV(f),
+    onSuccess: (data) => {
+      setCandidateId(data.id);
+      toast({ title: 'CV Received', description: 'Your CV has been successfully uploaded.' });
+    },
+    onError: () => {
+      toast({ title: 'Lỗi', description: 'Không thể tải lên CV. Vui lòng thử lại.', variant: 'destructive' });
+    },
+  });
+
+  const { data: candidate } = useQuery({
+    queryKey: ['candidate-status', candidateId],
+    queryFn: () => candidateService.getById(candidateId!),
+    enabled: !!candidateId,
+    retry: false,
+    refetchInterval: (query) => {
+      const status = query.state.data?.extractStatus;
+      return status === 'COMPLETE' || status === 'FAILED' ? false : 5000;
+    },
+  });
 
   const handleFileChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -41,7 +63,6 @@ export default function PublicUploadPage() {
         return;
       }
       setFile(f);
-      setError(null);
     },
     [toast],
   );
@@ -56,30 +77,23 @@ export default function PublicUploadPage() {
       });
       return;
     }
-    setSubmitted(true);
-    setExtractStatus('PENDING');
-
-    // Simulate extract flow
-    setTimeout(() => setExtractStatus('SCANNING'), 1500);
-    setTimeout(() => {
-      setExtractStatus('COMPLETE');
-      toast({ title: 'CV Processed', description: 'Your CV has been successfully extracted.' });
-    }, 5000);
+    uploadMutation.mutate(file);
   };
 
-  if (submitted) {
+  if (candidateId) {
+    const status = candidate?.extractStatus || 'PENDING';
     return (
       <div className='flex min-h-screen items-center justify-center bg-background p-4'>
         <Card className='w-full max-w-md animate-fade-in'>
           <CardHeader className='text-center'>
-            {extractStatus === 'COMPLETE' ? (
+            {status === 'COMPLETE' ? (
               <CheckCircle className='mx-auto h-12 w-12 text-success' />
-            ) : extractStatus === 'FAILED' ? (
+            ) : status === 'FAILED' ? (
               <AlertCircle className='mx-auto h-12 w-12 text-destructive' />
             ) : (
-              <FileText className='mx-auto h-12 w-12 text-primary animate-pulse' />
+              <Loader2 className='mx-auto h-12 w-12 text-primary animate-spin' />
             )}
-            <CardTitle className='mt-4'>CV Received</CardTitle>
+            <CardTitle className='mt-4'>CV Processing</CardTitle>
           </CardHeader>
           <CardContent className='text-center space-y-4'>
             <p className='text-sm text-muted-foreground'>
@@ -87,15 +101,20 @@ export default function PublicUploadPage() {
             </p>
             <div className='flex items-center justify-center gap-2'>
               <span className='text-sm text-muted-foreground'>Status:</span>
-              <ExtractStatusBadge status={extractStatus} />
+              <ExtractStatusBadge status={status} />
             </div>
-            {extractStatus === 'FAILED' && (
+            {status === 'FAILED' && (
               <p className='text-sm text-destructive'>
-                There was an error processing your CV. Our team has been notified and will reach out if needed.
+                {candidate?.extractError?.message || 'There was an error processing your CV. Our team has been notified.'}
               </p>
             )}
-            {(extractStatus === 'PENDING' || extractStatus === 'SCANNING') && (
+            {(status === 'PENDING' || status === 'SCANNING') && (
               <p className='text-xs text-muted-foreground'>This page updates automatically...</p>
+            )}
+            {status === 'COMPLETE' && (
+              <p className='text-sm text-success font-medium'>
+                Extraction complete! We will review your profile shortly.
+              </p>
             )}
           </CardContent>
         </Card>
@@ -146,10 +165,18 @@ export default function PublicUploadPage() {
                 <span className='ml-auto text-xs text-muted-foreground'>{(file.size / 1024 / 1024).toFixed(1)} MB</span>
               </div>
             )}
-            {error && <p className='text-sm text-destructive'>{error}</p>}
-            <Button type='submit' className='w-full'>
-              <Upload className='mr-2 h-4 w-4' />
-              Submit CV
+            <Button type='submit' className='w-full' disabled={uploadMutation.isPending}>
+              {uploadMutation.isPending ? (
+                <>
+                  <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                  Uploading...
+                </>
+              ) : (
+                <>
+                  <Upload className='mr-2 h-4 w-4' />
+                  Submit CV
+                </>
+              )}
             </Button>
           </form>
         </CardContent>

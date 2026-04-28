@@ -1,28 +1,27 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { Input } from '@/shared/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/components/ui/table';
-import { candidates, type ExtractStatus, type EmploymentTag } from '@/shared/lib/mock-data';
+import { candidateService } from '@/shared/lib/api-services';
 import { ExtractStatusBadge, EmploymentBadge } from '@/shared/components/StatusBadges';
 import PageHeader from '@/shared/components/PageHeader';
-import { Search } from 'lucide-react';
+import { Search, Loader2 } from 'lucide-react';
+import type { ExtractStatus, EmploymentTag } from '@/shared/types/api';
 
 export default function CandidatesPage() {
   const [extractFilter, setExtractFilter] = useState<ExtractStatus | 'ALL'>('ALL');
   const [employmentFilter, setEmploymentFilter] = useState<EmploymentTag | 'ALL'>('ALL');
   const [keyword, setKeyword] = useState('');
 
-  const filtered = candidates.filter((c) => {
-    if (extractFilter !== 'ALL' && c.extractStatus !== extractFilter) return false;
-    if (employmentFilter !== 'ALL' && c.employmentTag !== employmentFilter) return false;
-    if (
-      keyword &&
-      !c.name.toLowerCase().includes(keyword.toLowerCase()) &&
-      !c.email.toLowerCase().includes(keyword.toLowerCase())
-    )
-      return false;
-    return true;
+  const { data: candidates, isLoading } = useQuery({
+    queryKey: ['candidates', extractFilter, employmentFilter, keyword],
+    queryFn: () => candidateService.getAll({
+      extractStatus: extractFilter === 'ALL' ? undefined : extractFilter,
+      employmentTag: employmentFilter === 'ALL' ? undefined : employmentFilter,
+      search: keyword || undefined,
+    }),
   });
 
   return (
@@ -63,7 +62,12 @@ export default function CandidatesPage() {
         </Select>
       </div>
 
-      <div className='rounded-lg border'>
+      <div className='rounded-lg border relative'>
+        {isLoading && (
+          <div className='absolute inset-0 z-20 flex items-center justify-center bg-background/50 rounded-lg'>
+            <Loader2 className='h-8 w-8 animate-spin text-primary' />
+          </div>
+        )}
         <Table>
           <TableHeader>
             <TableRow>
@@ -76,7 +80,7 @@ export default function CandidatesPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filtered.map((c) => (
+            {candidates?.map((c) => (
               <TableRow key={c.id} className='cursor-pointer hover:bg-muted/50'>
                 <TableCell>
                   <Link to={`/hr/candidates/${c.id}`} className='font-medium text-primary hover:underline'>
@@ -94,7 +98,7 @@ export default function CandidatesPage() {
                 <TableCell className='text-muted-foreground'>{c.uploadedAt}</TableCell>
               </TableRow>
             ))}
-            {filtered.length === 0 && (
+            {(!candidates || candidates.length === 0) && !isLoading && (
               <TableRow>
                 <TableCell colSpan={6} className='text-center text-muted-foreground py-8'>
                   No candidates found

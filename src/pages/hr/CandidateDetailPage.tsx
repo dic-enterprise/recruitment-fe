@@ -1,18 +1,38 @@
 import { useParams, Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { Button } from '@/shared/components/ui/button';
-import { candidates, getMatchesForCandidate } from '@/shared/lib/mock-data';
+import { candidateService, matchService } from '@/shared/lib/api-services';
 import { ExtractStatusBadge, EmploymentBadge, ScoreBadge } from '@/shared/components/StatusBadges';
 import PageHeader from '@/shared/components/PageHeader';
-import { ArrowLeft, Mail, Phone, FileText, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Mail, Phone, FileText, AlertCircle, Loader2 } from 'lucide-react';
 
 export default function CandidateDetailPage() {
   const { candidateId } = useParams();
-  const candidate = candidates.find((c) => c.id === candidateId);
+
+  const { data: candidate, isLoading: candidateLoading } = useQuery({
+    queryKey: ['candidate', candidateId],
+    queryFn: () => candidateService.getById(candidateId!),
+    enabled: !!candidateId,
+  });
+
+  const { data: matches, isLoading: matchesLoading } = useQuery({
+    queryKey: ['candidate-matches', candidateId],
+    queryFn: () => matchService.getByCandidateId(candidateId!),
+    enabled: !!candidateId,
+  });
+
+  if (candidateLoading || matchesLoading) {
+    return (
+      <div className='flex h-64 items-center justify-center'>
+        <Loader2 className='h-8 w-8 animate-spin text-primary' />
+      </div>
+    );
+  }
 
   if (!candidate) return <div className='p-8 text-center text-muted-foreground'>Candidate not found</div>;
 
-  const matches = getMatchesForCandidate(candidate.id);
+  const matchResults = matches || [];
 
   return (
     <div>
@@ -109,14 +129,14 @@ export default function CandidateDetailPage() {
 
         <Card className='lg:col-span-2'>
           <CardHeader>
-            <CardTitle className='text-base'>Match Results ({matches.length})</CardTitle>
+            <CardTitle className='text-base'>Match Results ({matchResults.length})</CardTitle>
           </CardHeader>
           <CardContent>
-            {matches.length === 0 ? (
+            {matchResults.length === 0 ? (
               <p className='text-sm text-muted-foreground text-center py-8'>No match results for this candidate</p>
             ) : (
               <div className='space-y-3'>
-                {matches
+                {[...matchResults]
                   .sort((a, b) => b.score - a.score)
                   .map((m) => (
                     <div key={m.id} className='rounded-lg border p-4'>

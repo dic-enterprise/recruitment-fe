@@ -1,31 +1,37 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AutoSizer } from 'react-virtualized-auto-sizer';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Input } from '@/shared/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/components/ui/table';
 import { Button } from '@/shared/components/ui/button';
-import { appendJob, departments, type Job, jobs, type JobStatus } from '@/shared/lib/mock-data';
+import { jobService, departmentService } from '@/shared/lib/api-services';
 import { JobStatusBadge } from '@/shared/components/StatusBadges';
 import PageHeader from '@/shared/components/PageHeader';
 import { CreateJobModal } from '@/shared/components/hr/CreateJobDialog';
 import useModal from '@/shared/hooks/useModal';
-import { Plus, Search } from 'lucide-react';
+import { Plus, Search, Loader2 } from 'lucide-react';
+import type { JobStatus } from '@/shared/types/api';
 
 export default function JobsPage() {
-  const [jobList, setJobList] = useState<Job[]>(() => [...jobs]);
+  const queryClient = useQueryClient();
   const [statusFilter, setStatusFilter] = useState<JobStatus | 'ALL'>('ALL');
   const [deptFilter, setDeptFilter] = useState<string>('ALL');
   const [keyword, setKeyword] = useState('');
 
-  const filtered = jobList.filter((j) => {
-    if (statusFilter !== 'ALL' && j.status !== statusFilter) return false;
-    if (deptFilter !== 'ALL' && j.departmentId !== deptFilter) return false;
-    if (keyword) {
-      const q = keyword.toLowerCase();
-      if (!j.title.toLowerCase().includes(q) && !j.departmentName.toLowerCase().includes(q)) return false;
-    }
-    return true;
+  const { data: departments } = useQuery({
+    queryKey: ['departments'],
+    queryFn: departmentService.getAll,
+  });
+
+  const { data: jobList, isLoading } = useQuery({
+    queryKey: ['jobs', statusFilter, deptFilter, keyword],
+    queryFn: () => jobService.getAll({
+      status: statusFilter === 'ALL' ? undefined : statusFilter,
+      departmentId: deptFilter === 'ALL' ? undefined : deptFilter,
+      search: keyword || undefined,
+    }),
   });
 
   const [modalNode, openModal] = useModal();
@@ -33,9 +39,8 @@ export default function JobsPage() {
     void openModal((close) => (
       <CreateJobModal
         close={close}
-        onJobCreated={(job) => {
-          appendJob(job);
-          setJobList([...jobs]);
+        onJobCreated={() => {
+          queryClient.invalidateQueries({ queryKey: ['jobs'] });
         }}
       />
     ));
@@ -84,7 +89,7 @@ export default function JobsPage() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value='ALL'>All Departments</SelectItem>
-            {departments.map((d) => (
+            {departments?.map((d) => (
               <SelectItem key={d.id} value={d.id}>
                 {d.name}
               </SelectItem>
@@ -93,7 +98,12 @@ export default function JobsPage() {
         </Select>
       </div>
 
-      <div className='min-h-0 min-w-0 flex-1'>
+      <div className='min-h-0 min-w-0 flex-1 relative'>
+        {isLoading && (
+          <div className='absolute inset-0 z-20 flex items-center justify-center bg-background/50'>
+            <Loader2 className='h-8 w-8 animate-spin text-primary' />
+          </div>
+        )}
         <AutoSizer
           className='h-full min-h-0 w-full'
           style={{ height: '100%', width: '100%' }}
@@ -112,7 +122,7 @@ export default function JobsPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filtered.map((job) => (
+                    {jobList?.map((job) => (
                       <TableRow key={job.id} className='cursor-pointer hover:bg-muted/50'>
                         <TableCell>
                           <Link to={`/hr/jobs/${job.id}`} className='font-medium text-primary hover:underline'>
@@ -128,7 +138,7 @@ export default function JobsPage() {
                         <TableCell className='text-right font-semibold'>{job.highMatchCount}</TableCell>
                       </TableRow>
                     ))}
-                    {filtered.length === 0 && (
+                    {(!jobList || jobList.length === 0) && !isLoading && (
                       <TableRow>
                         <TableCell colSpan={6} className='py-8 text-center text-muted-foreground'>
                           No jobs found
