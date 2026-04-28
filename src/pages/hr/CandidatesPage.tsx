@@ -1,16 +1,22 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Input } from '@/shared/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/components/ui/table';
 import { candidateService } from '@/shared/lib/api-services';
 import { ExtractStatusBadge, EmploymentBadge } from '@/shared/components/StatusBadges';
 import PageHeader from '@/shared/components/PageHeader';
-import { Search, Loader2 } from 'lucide-react';
+import { Search, Loader2, Upload } from 'lucide-react';
+import { Button } from '@/shared/components/ui/button';
+import { useToast } from '@/shared/hooks/use-toast';
 import type { ExtractStatus, EmploymentTag } from '@/shared/types/api';
 
 export default function CandidatesPage() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
   const [extractFilter, setExtractFilter] = useState<ExtractStatus | 'ALL'>('ALL');
   const [employmentFilter, setEmploymentFilter] = useState<EmploymentTag | 'ALL'>('ALL');
   const [keyword, setKeyword] = useState('');
@@ -24,9 +30,59 @@ export default function CandidatesPage() {
     }),
   });
 
+  const uploadMutation = useMutation({
+    mutationFn: (file: File) => candidateService.uploadCV(file),
+    onSuccess: () => {
+      toast({ title: 'Thành công', description: 'CV đã được tải lên và đang được xử lý.' });
+      queryClient.invalidateQueries({ queryKey: ['candidates'] });
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: 'Lỗi tải lên', 
+        description: error.response?.data?.message || 'Không thể tải lên CV lúc này.',
+        variant: 'destructive' 
+      });
+    }
+  });
+
+  const handleUploadClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      uploadMutation.mutate(file);
+      // Reset input to allow uploading the same file again if needed
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
   return (
     <div>
-      <PageHeader title='Candidates' description='View all candidates and their CV extract status' />
+      <PageHeader 
+        title='Candidates' 
+        description='View all candidates and their CV extract status' 
+        actions={
+          <div className='flex items-center gap-2'>
+            <input
+              type='file'
+              ref={fileInputRef}
+              onChange={handleFileChange}
+              className='hidden'
+              accept='.pdf,.doc,.docx'
+            />
+            <Button onClick={handleUploadClick} disabled={uploadMutation.isPending}>
+              {uploadMutation.isPending ? (
+                <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+              ) : (
+                <Upload className='mr-2 h-4 w-4' />
+              )}
+              Upload CV
+            </Button>
+          </div>
+        }
+      />
 
       <div className='mb-4 flex flex-wrap gap-3'>
         <div className='relative flex-1 min-w-[200px]'>
@@ -63,7 +119,7 @@ export default function CandidatesPage() {
       </div>
 
       <div className='rounded-lg border relative'>
-        {isLoading && (
+        {(isLoading || uploadMutation.isPending) && (
           <div className='absolute inset-0 z-20 flex items-center justify-center bg-background/50 rounded-lg'>
             <Loader2 className='h-8 w-8 animate-spin text-primary' />
           </div>
@@ -84,10 +140,10 @@ export default function CandidatesPage() {
               <TableRow key={c.id} className='cursor-pointer hover:bg-muted/50'>
                 <TableCell>
                   <Link to={`/hr/candidates/${c.id}`} className='font-medium text-primary hover:underline'>
-                    {c.name}
+                    {c.name || 'Processing...'}
                   </Link>
                 </TableCell>
-                <TableCell className='text-muted-foreground'>{c.email}</TableCell>
+                <TableCell className='text-muted-foreground'>{c.email || '—'}</TableCell>
                 <TableCell className='text-muted-foreground text-xs'>{c.cvFileName}</TableCell>
                 <TableCell>
                   <ExtractStatusBadge status={c.extractStatus} />
@@ -98,7 +154,7 @@ export default function CandidatesPage() {
                 <TableCell className='text-muted-foreground'>{c.uploadedAt}</TableCell>
               </TableRow>
             ))}
-            {(!candidates || candidates.length === 0) && !isLoading && (
+            {(!candidates || candidates.length === 0) && !isLoading && !uploadMutation.isPending && (
               <TableRow>
                 <TableCell colSpan={6} className='text-center text-muted-foreground py-8'>
                   No candidates found
