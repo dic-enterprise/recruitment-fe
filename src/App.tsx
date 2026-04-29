@@ -10,7 +10,7 @@ import DashboardPage from './pages/hr/DashboardPage';
 import DepartmentsPage from './pages/hr/department/DepartmentsPage.tsx';
 import DepartmentDetailPage from './pages/hr/DepartmentDetailPage';
 import JobsPage from './pages/hr/JobsPage';
-import JobDetailPage from './pages/hr/JobDetailPage';
+import MatchResultsPage from './pages/hr/MatchResultsPage';
 import CandidatesPage from './pages/hr/CandidatesPage';
 import CandidateDetailPage from './pages/hr/CandidateDetailPage';
 import PublicUploadPage from './pages/public/PublicUploadPage';
@@ -84,10 +84,10 @@ const App = () => (
             }
           />
           <Route
-            path='/hr/jobs/:jobId'
+            path='/hr/matches'
             element={
               <AppLayout>
-                <JobDetailPage />
+                <MatchResultsPage />
               </AppLayout>
             }
           />

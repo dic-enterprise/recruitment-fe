@@ -1,12 +1,13 @@
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/shared/lib/utils.ts';
-import { LayoutDashboard, Building2, Briefcase, Users, AlertTriangle, Upload } from 'lucide-react';
+import { LayoutDashboard, Building2, Briefcase, Users, AlertTriangle, CheckSquare } from 'lucide-react';
 
 const hrLinks = [
   { to: '/hr/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { to: '/hr/matches', label: 'Matching CV', icon: CheckSquare },
+  { to: '/hr/candidates', label: 'Candidates', icon: Users },
   { to: '/hr/departments', label: 'Departments', icon: Building2 },
   { to: '/hr/jobs', label: 'Jobs', icon: Briefcase },
-  { to: '/hr/candidates', label: 'Candidates', icon: Users },
 ];
 
 const adminLinks = [{ to: '/admin/extract-errors', label: 'Extract Errors', icon: AlertTriangle }];

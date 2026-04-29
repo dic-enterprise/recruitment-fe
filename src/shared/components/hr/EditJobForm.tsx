@@ -1,6 +1,6 @@
 import { useEffect, useId, useMemo, useState, type ReactNode } from 'react';
 import type { FormikErrors } from 'formik';
-import { Briefcase, Bold, Italic, Link2, List, MapPin, Plus, Sparkles, Target, FileText, X } from 'lucide-react';
+import { Briefcase, Bold, Italic, Link2, List, MapPin, Plus, Target, FileText, X, Loader2 } from 'lucide-react';
 import { BaseAction } from '@/shared/components/dialog';
 import { Button } from '@/shared/components/ui/button.tsx';
 import { Input } from '@/shared/components/ui/input.tsx';
@@ -11,9 +11,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui
 import { Progress } from '@/shared/components/ui/progress.tsx';
 import { ToggleGroup, ToggleGroupItem } from '@/shared/components/ui/toggle-group.tsx';
 import { Badge } from '@/shared/components/ui/badge.tsx';
+import { Slider } from '@/shared/components/ui/slider.tsx';
 import useForm from '@/shared/hooks/useForm.ts';
-import { departments, type Job, type JobStatus } from '@/shared/lib/mock-data.ts';
+import { departmentService } from '@/shared/lib/api-services.ts';
+import { type Job, type JobStatus, type Department } from '@/shared/types/api.ts';
 import { cn } from '@/shared/lib/utils.ts';
+import { useQuery } from '@tanstack/react-query';
 
 export function formatVnd(n: number): string {
   if (!Number.isFinite(n) || n <= 0) return '';
@@ -54,29 +57,56 @@ function salaryStringsFromJob(salary?: string): { min: string; max: string } {
   return { min: '', max: '' };
 }
 
-function parseRequirementsToForm(job: Job): { description: string; skills: string[]; urgency: 'NORMAL' | 'URGENT' } {
-  let desc = job.requirements;
+function parseRequirementsToForm(job: Job): {
+  description: string;
+  requirements: string;
+  urgency: 'NORMAL' | 'URGENT'
+} {
+  const text = job.requirements || '';
   let urgency: 'NORMAL' | 'URGENT' = job.recruitmentUrgency ?? 'NORMAL';
-  if (desc.includes('[Ưu tiên tuyển dụng khẩn cấp]')) {
-    urgency = 'URGENT';
-    desc = desc.replace(/\n\n\[Ưu tiên tuyển dụng khẩn cấp\]\s*$/m, '').trim();
-  }
-  let skills = job.skills ? [...job.skills] : [];
-  const km = desc.match(/\n\nKỹ năng:\s*(.+?)\.\s*$/s);
-  if (km && km.index !== undefined) {
-    if (skills.length === 0) {
-      skills = km[1]
-        .split(',')
-        .map((s) => s.trim())
-        .filter(Boolean);
-    }
-    desc = desc.slice(0, km.index).trim();
-  }
-  return { description: desc, skills, urgency };
-}
 
-function defaultCreateSkills() {
-  return ['Figma', 'UI/UX Design', 'Prototyping'];
+  const sections: Record<string, string> = {
+    desc: '',
+    reqs: ''
+  };
+
+  const extract = (raw: string, startMarker: string, endMarkers: string[]) => {
+    const startIdx = raw.indexOf(startMarker);
+    if (startIdx === -1) return '';
+    const contentStart = startIdx + startMarker.length;
+    let endIdx = raw.length;
+    for (const marker of endMarkers) {
+      const idx = raw.indexOf(marker, contentStart);
+      if (idx !== -1 && idx < endIdx) endIdx = idx;
+    }
+    return raw.slice(contentStart, endIdx).trim();
+  };
+
+  sections.desc = extract(text, '[MÔ TẢ CÔNG VIỆC]', ['[YÊU CẦU]', '[YÊU CẦU BẮT BUỘC]', '[ĐIỂM CỘNG]', '[Ưu tiên tuyển dụng khẩn cấp]']);
+
+  // Try new marker first, then fallback to old ones
+  const newReqs = extract(text, '[YÊU CẦU]', ['[Ưu tiên tuyển dụng khẩn cấp]']);
+  if (newReqs) {
+    sections.reqs = newReqs;
+  } else {
+    const nec = extract(text, '[YÊU CẦU BẮT BUỘC]', ['[ĐIỂM CỘNG]', '[Ưu tiên tuyển dụng khẩn cấp]']);
+    const plus = extract(text, '[ĐIỂM CỘNG]', ['[Ưu tiên tuyển dụng khẩn cấp]']);
+    sections.reqs = [nec, plus].filter(Boolean).join('\n\n');
+  }
+
+  if (text.includes('[Ưu tiên tuyển dụng khẩn cấp]')) {
+    urgency = 'URGENT';
+  }
+
+  if (!sections.desc && !sections.reqs) {
+    sections.desc = text.replace(/\[Ưu tiên tuyển dụng khẩn cấp\]/g, '').trim();
+  }
+
+  return {
+    description: sections.desc,
+    requirements: sections.reqs,
+    urgency
+  };
 }
 
 export type JobFormValues = {
@@ -84,12 +114,9 @@ export type JobFormValues = {
   departmentId: string;
   jobStatus: JobStatus;
   recruitmentUrgency: 'NORMAL' | 'URGENT';
-  salaryMin: string;
-  salaryMax: string;
-  location: string;
-  workplace: string[];
   description: string;
-  skills: string[];
+  requirements: string;
+  minMatchingScore: number;
 };
 
 function buildInitialValues(job: Job | null): JobFormValues {
@@ -98,31 +125,21 @@ function buildInitialValues(job: Job | null): JobFormValues {
       title: '',
       departmentId: '',
       jobStatus: 'ACTIVE',
-      recruitmentUrgency: 'URGENT',
-      salaryMin: '',
-      salaryMax: '',
-      location: '',
-      workplace: ['hybrid', 'fulltime'],
+      recruitmentUrgency: 'NORMAL',
       description: '',
-      skills: defaultCreateSkills(),
+      requirements: '',
+      minMatchingScore: 70,
     };
   }
   const parsed = parseRequirementsToForm(job);
-  const sal = salaryStringsFromJob(job.salary);
-  const ww: string[] = [];
-  if (job.workplaceHybrid !== false) ww.push('hybrid');
-  if (job.employmentFullTime !== false) ww.push('fulltime');
   return {
     title: job.title,
-    departmentId: job.departmentId,
+    departmentId: String(job.departmentId),
     jobStatus: job.status,
     recruitmentUrgency: parsed.urgency,
-    salaryMin: sal.min,
-    salaryMax: sal.max,
-    location: job.location ?? '',
-    workplace: ww,
     description: parsed.description,
-    skills: parsed.skills.length ? parsed.skills : [],
+    requirements: parsed.requirements,
+    minMatchingScore: job.minMatchingScore ?? 60,
   };
 }
 
@@ -134,69 +151,61 @@ function validateJobForm(values: JobFormValues): FormikErrors<JobFormValues> {
   if (!values.departmentId) {
     errors.departmentId = 'Chọn phòng ban';
   }
-  if (values.description.trim().length < 10) {
-    errors.description = 'Mô tả tối thiểu 10 ký tự';
+  if (!values.requirements?.trim()) {
+    errors.requirements = 'Nhập yêu cầu tuyển dụng';
   }
-  const hasMin = Boolean(values.salaryMin?.trim());
-  const hasMax = Boolean(values.salaryMax?.trim());
-  if (hasMin !== hasMax) {
-    errors.salaryMax = 'Nhập đủ mức lương tối thiểu và tối đa, hoặc để trống cả hai';
+  if (!values.description?.trim()) {
+    errors.description = 'Nhập mô tả công việc';
   }
-  const minN = parseVndDigits(values.salaryMin);
-  const maxN = parseVndDigits(values.salaryMax);
-  if (minN != null && maxN != null && minN > maxN) {
-    errors.salaryMax = 'Lương tối đa phải lớn hơn hoặc bằng tối thiểu';
-  }
-  if (values.skills.length === 0) {
-    errors.skills = 'Thêm ít nhất một kỹ năng mục tiêu';
+  if (values.minMatchingScore < 1 || values.minMatchingScore > 100) {
+    errors.minMatchingScore = 'Điểm từ 1 đến 100';
   }
   return errors;
 }
 
-function valuesToJob(values: JobFormValues, initialJob: Job | null): Job {
-  const dept = departments.find((d) => d.id === values.departmentId)!;
-  const min = parseVndDigits(values.salaryMin);
-  const max = parseVndDigits(values.salaryMax);
-  const workplaceHybrid = values.workplace.includes('hybrid');
-  const employmentFullTime = values.workplace.includes('fulltime');
-  const skillsLine = values.skills.length ? `\n\nKỹ năng: ${values.skills.join(', ')}.` : '';
-  const urgencyLine = values.recruitmentUrgency === 'URGENT' ? '\n\n[Ưu tiên tuyển dụng khẩn cấp]' : '';
-  const requirements = `${values.description.trim()}${skillsLine}${urgencyLine}`.trim();
+function valuesToJob(values: JobFormValues, initialJob: Job | null, departments: Department[]): Job {
+  const dept = departments.find((d) => String(d.id) === values.departmentId)!;
+
+  const sections = [
+    `[MÔ TẢ CÔNG VIỆC]\n${values.description.trim()}`,
+    `[YÊU CẦU]\n${values.requirements.trim()}`,
+    values.recruitmentUrgency === 'URGENT' ? '[Ưu tiên tuyển dụng khẩn cấp]' : ''
+  ];
+
+  const requirements = sections.filter(Boolean).join('\n\n');
   const existing = initialJob ?? undefined;
 
   return {
-    id: existing ? existing.id : `job-${Date.now()}`,
+    id: existing ? existing.id : 0,
     departmentId: dept.id,
     departmentName: dept.name,
     title: values.title.trim(),
-    salary: buildSalaryLabel(min, max),
-    requirements: requirements || '—',
+    salary: existing?.salary, // Preserve if editing, but hidden in UI
+    requirements,
     status: existing ? values.jobStatus : 'ACTIVE',
-    createdAt: existing ? existing.createdAt : new Date().toISOString().slice(0, 10),
+    createdAt: existing ? existing.createdAt : new Date().toISOString(),
     matchCount: existing ? existing.matchCount : 0,
     highMatchCount: existing ? existing.highMatchCount : 0,
-    location: values.location.trim() || undefined,
-    workplaceHybrid,
-    employmentFullTime,
+    location: existing?.location, // Preserve
+    workplaceHybrid: existing?.workplaceHybrid,
+    employmentFullTime: existing?.employmentFulltime,
     recruitmentUrgency: values.recruitmentUrgency,
-    skills: values.skills.length ? values.skills : undefined,
+    skills: [], // Reset skills as they are now integrated in requirements
+    minMatchingScore: values.minMatchingScore,
   };
 }
 
 function computeProgress(values: JobFormValues): number {
   let pts = 0;
-  if (values.title.trim()) pts += 18;
+  if (values.title.trim()) pts += 20;
   if (values.departmentId) pts += 15;
-  if (parseVndDigits(values.salaryMin) && parseVndDigits(values.salaryMax)) pts += 18;
-  else if (parseVndDigits(values.salaryMin) || parseVndDigits(values.salaryMax)) pts += 9;
-  if (values.location.trim()) pts += 12;
-  if (values.description.trim().length > 40) pts += 22;
-  else if (values.description.trim()) pts += 12;
-  if (values.skills.length > 0) pts += 15;
+  if (values.requirements.trim()) pts += 30;
+  if (values.description.trim()) pts += 25;
+  if (values.minMatchingScore > 0) pts += 10;
   return Math.min(100, Math.round(pts));
 }
 
-const SUGGESTED_SKILLS = ['User Research', 'Design Systems', 'Agile', 'React', 'Communication'];
+const SUGGESTED_SKILLS = ['Java', 'React', 'Spring Boot', 'SQL', 'Communication'];
 
 export type EditJobFormProps = {
   initialJob?: Job | null;
@@ -214,6 +223,12 @@ export function EditJobForm({
   showProgress = true,
 }: EditJobFormProps) {
   const isEdit = initialJob != null;
+
+  const { data: departmentList, isLoading: loadingDepts } = useQuery({
+    queryKey: ['departments'],
+    queryFn: departmentService.getAll,
+  });
+
   const initialValues = useMemo(() => buildInitialValues(initialJob), [initialJob]);
 
   const form = useForm<JobFormValues>({
@@ -222,7 +237,7 @@ export function EditJobForm({
     validateOnMount: true,
     validate: validateJobForm,
     onSubmit: (values) => {
-      onSubmit(valuesToJob(values, initialJob));
+      onSubmit(valuesToJob(values, initialJob, departmentList || []));
     },
   });
 
@@ -240,11 +255,6 @@ export function EditJobForm({
 
   const progress = useMemo(() => computeProgress(values), [values]);
 
-  const applyAiInsight = () => {
-    const line = 'Yêu cầu nộp portfolio (PDF hoặc link) cùng hồ sơ.';
-    const next = values.description.trim() ? `${values.description.trim()}\n\n${line}` : line;
-    void setFieldValue('description', next, true);
-  };
 
   const insertAroundSelection = (before: string, after: string) => {
     const el = document.getElementById(descId) as HTMLTextAreaElement | null;
@@ -281,352 +291,225 @@ export function EditJobForm({
 
   const labelSubmit = submitLabel ?? (isEdit ? 'Lưu thay đổi' : 'Đăng tuyển');
 
-  const sectionTitle = (n: number, icon: ReactNode, text: string) => (
-    <div className='flex items-center gap-2'>
-      <span className='flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground'>
-        {n}
-      </span>
-      <span className='text-primary'>{icon}</span>
-      <CardTitle className='text-base font-semibold'>{text}</CardTitle>
+  const sectionTitle = (_n: number, icon: ReactNode, text: string) => (
+    <div className='flex items-center gap-2 border-b border-slate-100 pb-2 mb-2'>
+      <span className='text-primary shrink-0'>{icon}</span>
+      <h3 className='text-sm font-bold uppercase tracking-tight text-slate-700'>{text}</h3>
     </div>
   );
 
   const fields = (
     <div className='space-y-4'>
-      <Card>
-        <CardHeader className='pb-3'>
+      <Card className='border-none shadow-none bg-transparent'>
+        <CardHeader className='px-0 pb-3 pt-0'>
           {sectionTitle(1, <Briefcase className='h-4 w-4' />, 'Thông tin cốt lõi')}
         </CardHeader>
-        <CardContent className='space-y-4'>
-          <div className='space-y-2'>
-            <Label htmlFor={titleId}>Chức danh công việc</Label>
-            <Input
-              id={titleId}
-              name='title'
-              placeholder='VD: Senior Product Designer'
-              value={values.title}
-              onChange={form.handleChange}
-              onBlur={form.handleBlur}
-              aria-invalid={isFormFieldInvalid('title')}
-              className={cn(isFormFieldInvalid('title') && 'border-destructive')}
-            />
-            {getFormErrorMessage('title') ? (
-              <p className='text-sm text-destructive'>{getFormErrorMessage('title')}</p>
-            ) : null}
-          </div>
-          <div className='space-y-2'>
-            <Label>Phòng ban</Label>
-            <Select
-              value={values.departmentId || undefined}
-              onValueChange={(v) => {
-                void setFieldValue('departmentId', v, true);
-                void setFieldTouched('departmentId', true);
-              }}
-            >
-              <SelectTrigger
-                aria-invalid={isFormFieldInvalid('departmentId')}
-                className={cn(isFormFieldInvalid('departmentId') && 'border-destructive')}
-              >
-                <SelectValue placeholder='Chọn phòng ban' />
-              </SelectTrigger>
-              <SelectContent>
-                {departments.map((d) => (
-                  <SelectItem key={d.id} value={d.id}>
-                    {d.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {getFormErrorMessage('departmentId') ? (
-              <p className='text-sm text-destructive'>{getFormErrorMessage('departmentId')}</p>
-            ) : null}
-          </div>
-          {isEdit && (
-            <div className='space-y-2'>
-              <Label>Trạng thái tin</Label>
+        <CardContent className='p-0'>
+          <div className='grid grid-cols-1 gap-4 sm:grid-cols-6'>
+            <div className='space-y-1.5 sm:col-span-6'>
+              <Label htmlFor={titleId} className='text-xs font-medium text-muted-foreground'>Chức danh công việc</Label>
+              <Input
+                id={titleId}
+                name='title'
+                placeholder='VD: Senior Product Designer'
+                value={values.title}
+                onChange={form.handleChange}
+                onBlur={form.handleBlur}
+                aria-invalid={isFormFieldInvalid('title')}
+                className={cn('h-10 bg-background', isFormFieldInvalid('title') && 'border-destructive')}
+              />
+              {getFormErrorMessage('title') ? (
+                <p className='text-[10px] text-destructive'>{getFormErrorMessage('title')}</p>
+              ) : null}
+            </div>
+
+            <div className='space-y-1.5 sm:col-span-3 lg:col-span-2'>
+              <Label className='text-xs font-medium text-muted-foreground'>Phòng ban</Label>
               <Select
-                value={values.jobStatus}
+                disabled={loadingDepts}
+                value={values.departmentId || undefined}
                 onValueChange={(v) => {
-                  void setFieldValue('jobStatus', v as JobStatus, true);
-                  void setFieldTouched('jobStatus', true);
+                  void setFieldValue('departmentId', v, true);
+                  void setFieldTouched('departmentId', true);
                 }}
               >
-                <SelectTrigger>
+                <SelectTrigger
+                  className={cn('h-10 bg-background', isFormFieldInvalid('departmentId') && 'border-destructive')}
+                >
+                  {loadingDepts ? (
+                    <div className='flex items-center gap-2'>
+                      <Loader2 className='h-3 w-3 animate-spin' />
+                      <span className='text-xs'>Đang tải...</span>
+                    </div>
+                  ) : (
+                    <SelectValue placeholder='Chọn phòng ban' className='text-xs' />
+                  )}
+                </SelectTrigger>
+                <SelectContent>
+                  {departmentList?.map((d) => (
+                    <SelectItem key={d.id} value={String(d.id)}>
+                      {d.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {getFormErrorMessage('departmentId') ? (
+                <p className='text-[10px] text-destructive'>{getFormErrorMessage('departmentId')}</p>
+              ) : null}
+            </div>
+
+            {isEdit && (
+              <div className='space-y-1.5 sm:col-span-3 lg:col-span-2'>
+                <Label className='text-xs font-medium text-muted-foreground'>Trạng thái tin</Label>
+                <Select
+                  value={values.jobStatus}
+                  onValueChange={(v) => {
+                    void setFieldValue('jobStatus', v as JobStatus, true);
+                    void setFieldTouched('jobStatus', true);
+                  }}
+                >
+                  <SelectTrigger className='h-10 bg-background'>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value='ACTIVE'>Hoạt động (Active)</SelectItem>
+                    <SelectItem value='CLOSED'>Đã đóng (Closed)</SelectItem>
+                    <SelectItem value='ARCHIVED'>Lưu trữ (Archived)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            <div className='space-y-1.5 sm:col-span-3 lg:col-span-1'>
+              <Label className='text-xs font-medium text-muted-foreground'>Mức độ ưu tiên</Label>
+              <Select
+                value={values.recruitmentUrgency}
+                onValueChange={(v) => {
+                  void setFieldValue('recruitmentUrgency', v as 'NORMAL' | 'URGENT', true);
+                  void setFieldTouched('recruitmentUrgency', true);
+                }}
+              >
+                <SelectTrigger className='h-10 bg-background'>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value='ACTIVE'>Active</SelectItem>
-                  <SelectItem value='CLOSED'>Closed</SelectItem>
-                  <SelectItem value='ARCHIVED'>Archived</SelectItem>
+                  <SelectItem value='URGENT'>Khẩn cấp</SelectItem>
+                  <SelectItem value='NORMAL'>Bình thường</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-          )}
-          <div className='space-y-2'>
-            <Label>Trạng thái tuyển</Label>
-            <Select
-              value={values.recruitmentUrgency}
-              onValueChange={(v) => {
-                void setFieldValue('recruitmentUrgency', v as 'NORMAL' | 'URGENT', true);
-                void setFieldTouched('recruitmentUrgency', true);
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value='URGENT'>Khẩn cấp (Ưu tiên)</SelectItem>
-                <SelectItem value='NORMAL'>Bình thường</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
 
-      <Card>
-        <CardHeader className='pb-3'>{sectionTitle(2, <MapPin className='h-4 w-4' />, 'Chế độ & Địa điểm')}</CardHeader>
-        <CardContent className='space-y-4'>
-          <div className='grid gap-4 sm:grid-cols-2'>
-            <div className='space-y-2'>
-              <Label>Mức lương dự kiến (VNĐ)</Label>
-              <div className='flex items-center gap-2'>
-                <Input
-                  name='salaryMin'
-                  placeholder='Tối thiểu'
-                  value={values.salaryMin}
-                  onChange={(e) => {
-                    const n = parseVndDigits(e.target.value);
-                    void setFieldValue('salaryMin', n != null ? formatVnd(n) : '', true);
+            <div className='space-y-2.5 sm:col-span-3 lg:col-span-2'>
+              <div className='flex items-center justify-between'>
+                <Label className='text-xs font-medium text-muted-foreground'>Điểm đạt (Interview Threshold)</Label>
+                <span className='text-xs font-bold text-primary'>{values.minMatchingScore}%</span>
+              </div>
+              <div className='px-1 pt-1'>
+                <Slider
+                  min={1}
+                  max={100}
+                  step={1}
+                  value={[values.minMatchingScore]}
+                  onValueChange={([v]) => {
+                    void setFieldValue('minMatchingScore', v, true);
+                    void setFieldTouched('minMatchingScore', true);
                   }}
-                  onBlur={() => void setFieldTouched('salaryMin', true)}
-                  inputMode='numeric'
-                  aria-invalid={isFormFieldInvalid('salaryMax')}
-                  className={cn(isFormFieldInvalid('salaryMax') && 'border-destructive')}
-                />
-                <span className='text-muted-foreground'>—</span>
-                <Input
-                  name='salaryMax'
-                  placeholder='Tối đa'
-                  value={values.salaryMax}
-                  onChange={(e) => {
-                    const n = parseVndDigits(e.target.value);
-                    void setFieldValue('salaryMax', n != null ? formatVnd(n) : '', true);
-                  }}
-                  onBlur={() => void setFieldTouched('salaryMax', true)}
-                  inputMode='numeric'
-                  aria-invalid={isFormFieldInvalid('salaryMax')}
-                  className={cn(isFormFieldInvalid('salaryMax') && 'border-destructive')}
+                  className='py-2'
                 />
               </div>
-              {getFormErrorMessage('salaryMax') ? (
-                <p className='text-sm text-destructive'>{getFormErrorMessage('salaryMax')}</p>
-              ) : null}
-            </div>
-            <div className='space-y-2'>
-              <Label htmlFor={locationId}>Địa điểm làm việc</Label>
-              <div className='relative'>
-                <MapPin className='absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground' />
-                <Input
-                  id={locationId}
-                  name='location'
-                  className='pl-9'
-                  placeholder='Quận 1, TP. Hồ Chí Minh'
-                  value={values.location}
-                  onChange={form.handleChange}
-                  onBlur={form.handleBlur}
-                />
-              </div>
-              <ToggleGroup
-                type='multiple'
-                value={values.workplace}
-                onValueChange={(v) => void setFieldValue('workplace', v, true)}
-                variant='outline'
-                size='sm'
-                className='justify-start pt-1'
-              >
-                <ToggleGroupItem value='hybrid' aria-label='Hybrid'>
-                  Hybrid
-                </ToggleGroupItem>
-                <ToggleGroupItem value='fulltime' aria-label='Toàn thời gian'>
-                  Toàn thời gian
-                </ToggleGroupItem>
-              </ToggleGroup>
+              <p className='text-[10px] text-muted-foreground'>Ứng viên đạt từ {values.minMatchingScore}% sẽ được đề xuất phỏng vấn.</p>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader className='pb-3'>{sectionTitle(3, <FileText className='h-4 w-4' />, 'Mô tả công việc')}</CardHeader>
-        <CardContent className='space-y-2'>
-          <div className='flex gap-1 rounded-md border bg-muted/30 p-1'>
-            <Button
-              type='button'
-              variant='ghost'
-              size='icon'
-              className='h-8 w-8'
-              onClick={() => insertAroundSelection('**', '**')}
-            >
-              <Bold className='h-4 w-4' />
-            </Button>
-            <Button
-              type='button'
-              variant='ghost'
-              size='icon'
-              className='h-8 w-8'
-              onClick={() => insertAroundSelection('*', '*')}
-            >
-              <Italic className='h-4 w-4' />
-            </Button>
-            <Button
-              type='button'
-              variant='ghost'
-              size='icon'
-              className='h-8 w-8'
-              onClick={() => insertAroundSelection('\n- ', '')}
-            >
-              <List className='h-4 w-4' />
-            </Button>
-            <Button
-              type='button'
-              variant='ghost'
-              size='icon'
-              className='h-8 w-8'
-              onClick={() => insertAroundSelection('[', '](https://)')}
-            >
-              <Link2 className='h-4 w-4' />
-            </Button>
-          </div>
-          <Textarea
-            id={descId}
-            name='description'
-            className={cn('min-h-[140px] resize-y', isFormFieldInvalid('description') && 'border-destructive')}
-            placeholder='Viết mô tả chi tiết về vai trò, trách nhiệm và văn hóa đội ngũ...'
-            value={values.description}
-            onChange={form.handleChange}
-            onBlur={form.handleBlur}
-            aria-invalid={isFormFieldInvalid('description')}
-          />
-          {getFormErrorMessage('description') ? (
-            <p className='text-sm text-destructive'>{getFormErrorMessage('description')}</p>
-          ) : null}
-          <div className='flex flex-wrap items-center justify-between gap-2 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-sm text-sky-900 dark:border-sky-900 dark:bg-sky-950/40 dark:text-sky-100'>
-            <div className='flex items-start gap-2'>
-              <Sparkles className='mt-0.5 h-4 w-4 shrink-0 text-sky-600 dark:text-sky-400' />
-              <span>
-                <span className='font-medium'>AI Insight:</span> Thêm &apos;Yêu cầu Portfolio&apos; để thu hút ứng viên
-                chất lượng hơn.
-              </span>
-            </div>
-            <Button
-              type='button'
-              variant='link'
-              className='h-auto shrink-0 px-2 text-sky-700 dark:text-sky-300'
-              onClick={applyAiInsight}
-            >
-              Áp dụng
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
 
-      <Card>
-        <CardHeader className='pb-3'>{sectionTitle(4, <Target className='h-4 w-4' />, 'Kỹ năng mục tiêu')}</CardHeader>
-        <CardContent className='space-y-3'>
-          <div className='flex flex-wrap gap-2'>
-            {values.skills.map((s) => (
-              <Badge key={s} variant='secondary' className='gap-1 pr-1 font-normal'>
-                {s}
-                <button
-                  type='button'
-                  className='ml-0.5 rounded-full p-0.5 hover:bg-background/80'
-                  onClick={() => removeSkill(s)}
-                  aria-label={`Xóa ${s}`}
-                >
-                  <X className='h-3 w-3' />
-                </button>
-              </Badge>
-            ))}
-          </div>
-          {getFormErrorMessage('skills') ? (
-            <p className='text-sm text-destructive'>{getFormErrorMessage('skills')}</p>
-          ) : null}
-          <div className='flex gap-2'>
-            <Input
-              placeholder='Thêm kỹ năng khác (VD: React, Communication...)'
-              value={skillDraft}
-              onChange={(e) => setSkillDraft(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  addSkill(skillDraft);
-                }
-              }}
+      <Card className='border-none shadow-none bg-transparent'>
+        <CardHeader className='px-0 pb-2 pt-0'>
+          {sectionTitle(3, <FileText className='h-4 w-4' />, 'Yêu cầu tuyển dụng')}
+        </CardHeader>
+        <CardContent className='p-0 space-y-3'>
+          <div className='group relative flex flex-col rounded-lg border bg-background focus-within:ring-1 focus-within:ring-primary'>
+            <Textarea
+              name='requirements'
+              className='min-h-[140px] border-none bg-transparent resize-none focus-visible:ring-0 text-sm py-3'
+              placeholder='Kỹ năng, kinh nghiệm, bằng cấp và các điểm cộng...'
+              value={values.requirements}
+              onChange={form.handleChange}
+              onBlur={form.handleBlur}
             />
-            <Button
-              type='button'
-              size='icon'
-              className='h-10 w-10 shrink-0 rounded-full'
-              onClick={() => addSkill(skillDraft)}
-            >
-              <Plus className='h-5 w-5' />
-            </Button>
           </div>
-          <div>
-            <p className='mb-2 text-xs text-muted-foreground'>Gợi ý từ hệ thống</p>
-            <div className='flex flex-wrap gap-2'>
-              {SUGGESTED_SKILLS.filter((s) => !values.skills.includes(s)).map((s) => (
-                <Button
-                  key={s}
-                  type='button'
-                  variant='outline'
-                  size='sm'
-                  className='h-8 text-xs'
-                  onClick={() => addSkill(s)}
-                >
-                  + {s}
-                </Button>
-              ))}
+          {getFormErrorMessage('requirements') && <p className='text-[10px] text-destructive'>{getFormErrorMessage('requirements')}</p>}
+        </CardContent>
+      </Card>
+
+      <Card className='border-none shadow-none bg-transparent'>
+        <CardHeader className='px-0 pb-2 pt-0'>
+          {sectionTitle(4, <Briefcase className='h-4 w-4' />, 'Mô tả công việc cụ thể')}
+        </CardHeader>
+        <CardContent className='p-0 space-y-3'>
+          <div className='group relative flex flex-col rounded-lg border bg-background focus-within:ring-1 focus-within:ring-primary'>
+            <div className='flex items-center gap-0.5 border-b bg-muted/20 p-1'>
+              <Button type='button' variant='ghost' size='icon' className='h-7 w-7' onClick={() => insertAroundSelection('**', '**')}>
+                <Bold className='h-3.5 w-3.5' />
+              </Button>
+              <Button type='button' variant='ghost' size='icon' className='h-7 w-7' onClick={() => insertAroundSelection('*', '*')}>
+                <Italic className='h-3.5 w-3.5' />
+              </Button>
+              <div className='mx-1 h-4 w-px bg-slate-200' />
+              <Button type='button' variant='ghost' size='icon' className='h-7 w-7' onClick={() => insertAroundSelection('\n- ', '')}>
+                <List className='h-3.5 w-3.5' />
+              </Button>
             </div>
+            <Textarea
+              id={descId}
+              name='description'
+              className='min-h-[150px] border-none bg-transparent resize-none focus-visible:ring-0 text-sm py-3'
+              placeholder='Chi tiết trách nhiệm và vai trò...'
+              value={values.description}
+              onChange={form.handleChange}
+              onBlur={form.handleBlur}
+            />
           </div>
+          {getFormErrorMessage('description') && <p className='text-[10px] text-destructive'>{getFormErrorMessage('description')}</p>}
         </CardContent>
       </Card>
     </div>
   );
 
   const footer = (
-    <div className='flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
+    <div className='flex w-full items-center justify-between gap-6'>
       {showProgress && (
-        <div className='min-w-0 flex-1 space-y-1.5'>
-          <p className='text-sm text-muted-foreground'>Thông tin hoàn tất {progress}%</p>
-          <Progress value={progress} className='h-2' />
+        <div className='hidden flex-1 items-center gap-4 sm:flex'>
+          <div className='flex-1'>
+            <div className='mb-1 flex justify-between text-[10px] font-bold uppercase text-slate-400'>
+              <span>Hoàn tất hồ sơ</span>
+              <span>{progress}%</span>
+            </div>
+            <Progress value={progress} className='h-1.5 bg-slate-100' />
+          </div>
         </div>
       )}
-      <div className='flex flex-wrap items-center justify-end gap-2'>
+      <div className='flex items-center gap-3'>
         {onCancel && !isEdit && (
-          <Button type='button' variant='outline' onClick={onCancel}>
-            Hủy
-          </Button>
+          <Button type='button' variant='ghost' className='h-10 px-6 text-sm font-medium' onClick={onCancel}>Hủy</Button>
         )}
-        <BaseAction
-          className={cn(!showProgress && 'w-full justify-end sm:min-w-[140px]')}
-          actions={[
-            {
-              title: labelSubmit,
-              actionCallback: () => void submitForm(),
-              color: 'primary',
-              disabled: isSubmitting || !values.title.trim() || !values.departmentId,
-            },
-          ]}
-        />
+        <Button
+          type='button'
+          className='h-10 min-w-[140px] px-8 text-sm font-bold shadow-lg shadow-primary/20'
+          onClick={() => void submitForm()}
+          disabled={isSubmitting || !values.title.trim() || !values.departmentId}
+        >
+          {labelSubmit}
+        </Button>
       </div>
     </div>
   );
 
   return (
     <div className='flex min-h-0 w-full flex-1 flex-col'>
-      <div className='min-h-0 flex-1 overflow-y-auto overscroll-contain'>{fields}</div>
-      <div className='shrink-0 border-t border-border pt-4 mt-4'>{footer}</div>
+      <div className='min-h-0 flex-1 overflow-y-auto px-1 py-1'>{fields}</div>
+      <div className='shrink-0 border-t bg-slate-50/30 px-2 py-4 dark:bg-slate-950/20'>{footer}</div>
     </div>
   );
 }

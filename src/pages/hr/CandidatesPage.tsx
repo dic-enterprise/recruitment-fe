@@ -3,15 +3,15 @@ import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Input } from '@/shared/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/components/ui/table';
 import { candidateService } from '@/shared/lib/api-services';
 import { ExtractStatusBadge, EmploymentBadge } from '@/shared/components/StatusBadges';
 import PageHeader from '@/shared/components/PageHeader';
-import { formatDate, formatDateTime } from '@/shared/lib/utils';
+import { formatDateTime } from '@/shared/lib/utils';
 import { Search, Loader2, Upload } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
 import { useToast } from '@/shared/hooks/use-toast';
-import type { ExtractStatus, EmploymentTag } from '@/shared/types/api';
+import { BaseTable, type Column } from '@/shared/components/BaseTable';
+import type { Candidate, ExtractStatus, EmploymentTag } from '@/shared/types/api';
 
 export default function CandidatesPage() {
   const queryClient = useQueryClient();
@@ -30,6 +30,10 @@ export default function CandidatesPage() {
       search: keyword || undefined,
     }),
   });
+
+  const ALLOWED_TYPES = [
+    'application/pdf',
+  ];
 
   const uploadMutation = useMutation({
     mutationFn: (file: File) => candidateService.uploadCV(file),
@@ -53,14 +57,62 @@ export default function CandidatesPage() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      if (!ALLOWED_TYPES.includes(file.type)) {
+        toast({
+          title: 'Invalid file type',
+          description: 'Only PDF files are allowed.',
+          variant: 'destructive',
+        });
+        return;
+      }
       uploadMutation.mutate(file);
       // Reset input to allow uploading the same file again if needed
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
+  const columns: Column<Candidate>[] = [
+    {
+      header: 'Name',
+      key: 'name',
+      width: '250px',
+      render: (c) => (
+        <Link to={`/hr/candidates/${c.id}`} className='font-semibold text-primary hover:underline'>
+          {c.name || 'Processing...'}
+        </Link>
+      ),
+    },
+    {
+      header: 'Email',
+      key: 'email',
+      render: (c) => c.email || '—',
+      className: 'text-muted-foreground',
+    },
+    {
+      header: 'CV File',
+      key: 'cvFileName',
+      className: 'text-muted-foreground text-xs',
+    },
+    {
+      header: 'Extract',
+      key: 'extractStatus',
+      render: (c) => <ExtractStatusBadge status={c.extractStatus} />,
+    },
+    {
+      header: 'Status',
+      key: 'employmentTag',
+      render: (c) => <EmploymentBadge tag={c.employmentTag} />,
+    },
+    {
+      header: 'Uploaded',
+      key: 'uploadedAt',
+      render: (c) => formatDateTime(c.uploadedAt),
+      className: 'text-muted-foreground',
+    },
+  ];
+
   return (
-    <div>
+    <div className='flex h-full flex-col'>
       <PageHeader 
         title='Candidates' 
         description='View all candidates and their CV extract status' 
@@ -71,8 +123,9 @@ export default function CandidatesPage() {
               ref={fileInputRef}
               onChange={handleFileChange}
               className='hidden'
-              accept='.pdf,.doc,.docx'
+              accept='.pdf'
             />
+            <p className='text-xs text-muted-foreground hidden sm:block'>PDF only</p>
             <Button onClick={handleUploadClick} disabled={uploadMutation.isPending}>
               {uploadMutation.isPending ? (
                 <Loader2 className='mr-2 h-4 w-4 animate-spin' />
@@ -119,52 +172,14 @@ export default function CandidatesPage() {
         </Select>
       </div>
 
-      <div className='rounded-lg border relative'>
-        {(isLoading || uploadMutation.isPending) && (
-          <div className='absolute inset-0 z-20 flex items-center justify-center bg-background/50 rounded-lg'>
-            <Loader2 className='h-8 w-8 animate-spin text-primary' />
-          </div>
-        )}
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>CV File</TableHead>
-              <TableHead>Extract</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Uploaded</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {candidates?.map((c) => (
-              <TableRow key={c.id} className='cursor-pointer hover:bg-muted/50'>
-                <TableCell>
-                  <Link to={`/hr/candidates/${c.id}`} className='font-medium text-primary hover:underline'>
-                    {c.name || 'Processing...'}
-                  </Link>
-                </TableCell>
-                <TableCell className='text-muted-foreground'>{c.email || '—'}</TableCell>
-                <TableCell className='text-muted-foreground text-xs'>{c.cvFileName}</TableCell>
-                <TableCell>
-                  <ExtractStatusBadge status={c.extractStatus} />
-                </TableCell>
-                <TableCell>
-                  <EmploymentBadge tag={c.employmentTag} />
-                </TableCell>
-                <TableCell className='text-muted-foreground'>{formatDateTime(c.uploadedAt)}</TableCell>
-              </TableRow>
-            ))}
-            {(!candidates || candidates.length === 0) && !isLoading && !uploadMutation.isPending && (
-              <TableRow>
-                <TableCell colSpan={6} className='text-center text-muted-foreground py-8'>
-                  No candidates found
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
+      <BaseTable
+        data={candidates}
+        columns={columns}
+        isLoading={isLoading || uploadMutation.isPending}
+        className='flex-1 min-h-0'
+        emptyMessage='No candidates found'
+        showIndex={true}
+      />
     </div>
   );
 }

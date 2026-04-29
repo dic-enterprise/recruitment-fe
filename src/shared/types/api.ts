@@ -33,6 +33,7 @@ export interface Job {
   employmentFullTime?: boolean;
   recruitmentUrgency?: 'NORMAL' | 'URGENT';
   skills?: string[];
+  minMatchingScore?: number;
 }
 
 export interface Candidate {

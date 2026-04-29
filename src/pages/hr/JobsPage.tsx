@@ -1,18 +1,17 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { AutoSizer } from 'react-virtualized-auto-sizer';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Input } from '@/shared/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/components/ui/table';
 import { Button } from '@/shared/components/ui/button';
 import { jobService, departmentService } from '@/shared/lib/api-services';
 import { JobStatusBadge } from '@/shared/components/StatusBadges';
 import PageHeader from '@/shared/components/PageHeader';
-import { CreateJobModal } from '@/shared/components/hr/CreateJobDialog';
+import { JobFormDialog } from '@/shared/components/hr/JobFormDialog';
+import { BaseTable, type Column } from '@/shared/components/BaseTable';
 import useModal from '@/shared/hooks/useModal';
-import { Plus, Search, Loader2 } from 'lucide-react';
-import type { JobStatus } from '@/shared/types/api';
+import { Plus, Search, Edit } from 'lucide-react';
+import type { Job, JobStatus } from '@/shared/types/api';
 
 export default function JobsPage() {
   const queryClient = useQueryClient();
@@ -35,16 +34,89 @@ export default function JobsPage() {
   });
 
   const [modalNode, openModal] = useModal();
+
   const openCreateJob = () => {
     void openModal((close) => (
-      <CreateJobModal
+      <JobFormDialog
         close={close}
-        onJobCreated={() => {
+        onSuccess={() => {
           queryClient.invalidateQueries({ queryKey: ['jobs'] });
         }}
       />
     ));
   };
+
+  const openEditJob = (job: Job) => {
+    void openModal((close) => (
+      <JobFormDialog
+        job={job}
+        close={close}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ['jobs'] });
+        }}
+      />
+    ));
+  };
+
+  const columns: Column<Job>[] = [
+    {
+      header: 'Title',
+      key: 'title',
+      width: '350px',
+      render: (job) => (
+        <Link 
+          to={`/hr/jobs/${job.id}/matching`} 
+          className='font-semibold text-primary hover:underline'
+        >
+          {job.title}
+        </Link>
+      ),
+    },
+    {
+      header: 'Department',
+      key: 'departmentName',
+      className: 'text-muted-foreground',
+    },
+    {
+      header: 'Status',
+      key: 'status',
+      render: (job) => <JobStatusBadge status={job.status} />,
+    },
+    {
+      header: 'Matches',
+      key: 'matchCount',
+      className: 'text-center font-medium',
+      headerClassName: 'text-center',
+    },
+    {
+      header: 'High (≥80)',
+      key: 'highMatchCount',
+      className: 'text-center font-bold text-success',
+      headerClassName: 'text-center',
+    },
+    {
+      header: 'Threshold',
+      key: 'minMatchingScore',
+      className: 'text-center font-medium text-slate-500',
+      headerClassName: 'text-center',
+      render: (job) => (
+        <span className='rounded-full bg-slate-100 px-2 py-0.5 text-[11px]'>
+          {job.minMatchingScore ?? 60}%
+        </span>
+      ),
+    },
+    {
+      header: 'Actions',
+      key: 'actions',
+      width: '100px',
+      render: (job) => (
+        <Button variant='outline' size='sm' onClick={() => openEditJob(job)}>
+          <Edit className='mr-1.5 h-3.5 w-3.5' />
+          Edit
+        </Button>
+      ),
+    },
+  ];
 
   return (
     <div className='flex h-full min-h-0 flex-col'>
@@ -90,7 +162,7 @@ export default function JobsPage() {
           <SelectContent>
             <SelectItem value='ALL'>All Departments</SelectItem>
             {departments?.map((d) => (
-              <SelectItem key={d.id} value={d.id}>
+              <SelectItem key={d.id} value={String(d.id)}>
                 {d.name}
               </SelectItem>
             ))}
@@ -98,60 +170,14 @@ export default function JobsPage() {
         </Select>
       </div>
 
-      <div className='min-h-0 min-w-0 flex-1 relative'>
-        {isLoading && (
-          <div className='absolute inset-0 z-20 flex items-center justify-center bg-background/50'>
-            <Loader2 className='h-8 w-8 animate-spin text-primary' />
-          </div>
-        )}
-        <AutoSizer
-          className='h-full min-h-0 w-full'
-          style={{ height: '100%', width: '100%' }}
-          renderProp={({ height, width }) =>
-            height == null || width == null ? null : (
-              <div style={{ height, width }} className='overflow-auto rounded-lg border'>
-                <Table>
-                  <TableHeader className='sticky top-0 z-10 bg-card [&_tr]:border-b'>
-                    <TableRow>
-                      <TableHead>Title</TableHead>
-                      <TableHead>Department</TableHead>
-                      <TableHead>Salary</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className='text-right'>Matches</TableHead>
-                      <TableHead className='text-right'>High (≥80)</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {jobList?.map((job) => (
-                      <TableRow key={job.id} className='cursor-pointer hover:bg-muted/50'>
-                        <TableCell>
-                          <Link to={`/hr/jobs/${job.id}`} className='font-medium text-primary hover:underline'>
-                            {job.title}
-                          </Link>
-                        </TableCell>
-                        <TableCell className='text-muted-foreground'>{job.departmentName}</TableCell>
-                        <TableCell className='text-muted-foreground'>{job.salary || '—'}</TableCell>
-                        <TableCell>
-                          <JobStatusBadge status={job.status} />
-                        </TableCell>
-                        <TableCell className='text-right'>{job.matchCount}</TableCell>
-                        <TableCell className='text-right font-semibold'>{job.highMatchCount}</TableCell>
-                      </TableRow>
-                    ))}
-                    {(!jobList || jobList.length === 0) && !isLoading && (
-                      <TableRow>
-                        <TableCell colSpan={6} className='py-8 text-center text-muted-foreground'>
-                          No jobs found
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            )
-          }
-        />
-      </div>
+      <BaseTable
+        data={jobList}
+        columns={columns}
+        isLoading={isLoading}
+        className='flex-1 min-h-0'
+        emptyMessage='No jobs found'
+        showIndex={true}
+      />
     </div>
   );
 }

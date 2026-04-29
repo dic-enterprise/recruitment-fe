@@ -12,8 +12,6 @@ import type { Candidate } from '@/shared/types/api';
 
 const ALLOWED_TYPES = [
   'application/pdf',
-  'application/msword',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
 ];
 const MAX_SIZE = 10 * 1024 * 1024; // 10MB
 
@@ -53,7 +51,7 @@ export default function PublicUploadPage() {
       if (!ALLOWED_TYPES.includes(f.type)) {
         toast({
           title: 'Invalid file type',
-          description: 'Only PDF, .doc, and .docx files are allowed.',
+          description: 'Only PDF files are allowed.',
           variant: 'destructive',
         });
         return;
@@ -155,8 +153,8 @@ export default function PublicUploadPage() {
             </div>
             <div>
               <Label htmlFor='cv'>CV File</Label>
-              <Input id='cv' type='file' accept='.pdf,.doc,.docx' onChange={handleFileChange} required />
-              <p className='mt-1 text-xs text-muted-foreground'>PDF, .doc, .docx — Max 10 MB</p>
+              <Input id='cv' type='file' accept='.pdf' onChange={handleFileChange} required />
+              <p className='mt-1 text-xs text-muted-foreground'>PDF only — Max 10 MB</p>
             </div>
             {file && (
               <div className='flex items-center gap-2 rounded-md bg-muted p-2 text-sm'>

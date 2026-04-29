@@ -1,12 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { Button } from '@/shared/components/ui/button';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/components/ui/table';
 import { adminService } from '@/shared/lib/api-services';
 import { ExtractStatusBadge } from '@/shared/components/StatusBadges';
 import PageHeader from '@/shared/components/PageHeader';
-import { AlertTriangle, RotateCcw, Loader2 } from 'lucide-react';
+import { BaseTable, type Column } from '@/shared/components/BaseTable';
+import { RotateCcw, Loader2 } from 'lucide-react';
 import { useToast } from '@/shared/hooks/use-toast';
+import type { Candidate } from '@/shared/types/api';
 
 export default function ExtractErrorsPage() {
   const { toast } = useToast();
@@ -28,73 +28,80 @@ export default function ExtractErrorsPage() {
     },
   });
 
-  if (isLoading) {
-    return (
-      <div className='flex h-64 items-center justify-center'>
-        <Loader2 className='h-8 w-8 animate-spin text-primary' />
-      </div>
-    );
-  }
-
-  const errors = failedCandidates || [];
+  const columns: Column<Candidate>[] = [
+    {
+      header: 'Candidate',
+      key: 'name',
+      render: (c) => <span className='font-semibold'>{c.name}</span>,
+    },
+    {
+      header: 'Email',
+      key: 'email',
+      className: 'text-muted-foreground',
+    },
+    {
+      header: 'CV File',
+      key: 'cvFileName',
+      className: 'text-xs text-muted-foreground',
+    },
+    {
+      header: 'Status',
+      key: 'extractStatus',
+      render: (c) => <ExtractStatusBadge status={c.extractStatus} />,
+    },
+    {
+      header: 'Error Code',
+      key: 'errorCode',
+      render: (c) => <code className='rounded bg-muted px-1.5 py-0.5 font-mono text-xs'>{c.extractError?.code || '—'}</code>,
+    },
+    {
+      header: 'Error Message',
+      key: 'errorMessage',
+      className: 'max-w-xs text-sm',
+      render: (c) => (
+        <p className='truncate' title={c.extractError?.message}>
+          {c.extractError?.message || '—'}
+        </p>
+      ),
+    },
+    {
+      header: 'Action',
+      key: 'action',
+      className: 'text-right',
+      headerClassName: 'text-right',
+      render: (c) => (
+        <Button
+          variant='outline'
+          size='sm'
+          onClick={() => retryMutation.mutate(String(c.id))}
+          disabled={retryMutation.isPending}
+        >
+          {retryMutation.isPending ? (
+            <Loader2 className='mr-1 h-3 w-3 animate-spin' />
+          ) : (
+            <RotateCcw className='mr-1 h-3 w-3' />
+          )}
+          Retry
+        </Button>
+      ),
+    },
+  ];
 
   return (
-    <div>
-      <PageHeader title='Extract Errors' description='Candidates with failed CV extraction — Admin IT can retry' />
+    <div className='flex h-full flex-col'>
+      <PageHeader 
+        title='Extract Errors' 
+        description='Candidates with failed CV extraction — Admin IT can retry' 
+      />
 
-      {errors.length === 0 ? (
-        <Card>
-          <CardContent className='flex flex-col items-center justify-center py-12'>
-            <AlertTriangle className='h-10 w-10 text-muted-foreground mb-2' />
-            <p className='text-muted-foreground'>No extract errors at this time.</p>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className='rounded-lg border'>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Candidate</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>CV File</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Error Code</TableHead>
-                <TableHead>Error Message</TableHead>
-                <TableHead className='text-right'>Action</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {errors.map((c) => (
-                <TableRow key={c.id}>
-                  <TableCell className='font-medium'>{c.name}</TableCell>
-                  <TableCell className='text-muted-foreground'>{c.email}</TableCell>
-                  <TableCell className='text-xs text-muted-foreground'>{c.cvFileName}</TableCell>
-                  <TableCell>
-                    <ExtractStatusBadge status={c.extractStatus} />
-                  </TableCell>
-                  <TableCell className='font-mono text-xs'>{c.extractError?.code || '—'}</TableCell>
-                  <TableCell className='max-w-xs truncate text-sm'>{c.extractError?.message || '—'}</TableCell>
-                  <TableCell className='text-right'>
-                    <Button
-                      variant='outline'
-                      size='sm'
-                      onClick={() => retryMutation.mutate(c.id)}
-                      disabled={retryMutation.isPending}
-                    >
-                      {retryMutation.isPending ? (
-                        <Loader2 className='mr-1 h-3 w-3 animate-spin' />
-                      ) : (
-                        <RotateCcw className='mr-1 h-3 w-3' />
-                      )}
-                      Retry
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      )}
+      <BaseTable
+        data={failedCandidates}
+        columns={columns}
+        isLoading={isLoading}
+        className='flex-1 min-h-0'
+        emptyMessage='No extract errors at this time.'
+        showIndex={true}
+      />
     </div>
   );
 }

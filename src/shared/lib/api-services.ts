@@ -94,6 +94,14 @@ export const candidateService = {
 };
 
 export const matchService = {
+  getAll: async (): Promise<CVMatch[]> => {
+    try {
+      return await apiClient.get('/matches');
+    } catch (error) {
+      console.error('Failed to fetch all matches:', error);
+      throw error;
+    }
+  },
   getByJobId: async (jobId: string): Promise<CVMatch[]> => {
     try {
       return await apiClient.get(`/matches/job/${jobId}`);

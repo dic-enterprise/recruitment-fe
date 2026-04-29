@@ -66,6 +66,7 @@ All API responses are wrapped in a standard `CodeResponse` object.
   "workplaceHybrid": "boolean?",
   "employmentFullTime": "boolean?",
   "recruitmentUrgency": "NORMAL | URGENT",
+  "minMatchingScore": "number (1-100)",
   "skills": ["string"]
 }
 ```
@@ -146,10 +147,12 @@ All API responses are wrapped in a standard `CodeResponse` object.
 - **GET /candidates/:id**
   - Returns `CodeResponse<Candidate>`.
 - **POST /candidates/upload**
-  - Multipart/form-data: `file` (PDF/DOCX)
+  - Multipart/form-data: `file` (PDF)
   - Returns `CodeResponse<Candidate>`.
 
 ### 4. Matches
+- **GET /matches**
+  - Returns `CodeResponse<List<CVMatch>>`.
 - **GET /matches/job/:jobId**
   - Returns `CodeResponse<List<CVMatch>>`.
 - **GET /matches/candidate/:candidateId**

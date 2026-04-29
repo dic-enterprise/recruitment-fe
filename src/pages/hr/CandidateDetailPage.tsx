@@ -2,10 +2,10 @@ import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { Button } from '@/shared/components/ui/button';
-import { candidateService, matchService } from '@/shared/lib/api-services';
-import { ExtractStatusBadge, EmploymentBadge, ScoreBadge } from '@/shared/components/StatusBadges';
+import { candidateService } from '@/shared/lib/api-services';
+import { ExtractStatusBadge, EmploymentBadge } from '@/shared/components/StatusBadges';
 import PageHeader from '@/shared/components/PageHeader';
-import { formatDate, formatDateTime } from '@/shared/lib/utils';
+import { formatDateTime } from '@/shared/lib/utils';
 import { ArrowLeft, Mail, Phone, FileText, AlertCircle, Loader2 } from 'lucide-react';
 
 export default function CandidateDetailPage() {
@@ -17,13 +17,7 @@ export default function CandidateDetailPage() {
     enabled: !!candidateId,
   });
 
-  const { data: matches, isLoading: matchesLoading } = useQuery({
-    queryKey: ['candidate-matches', candidateId],
-    queryFn: () => matchService.getByCandidateId(candidateId!),
-    enabled: !!candidateId,
-  });
-
-  if (candidateLoading || matchesLoading) {
+  if (candidateLoading) {
     return (
       <div className='flex h-64 items-center justify-center'>
         <Loader2 className='h-8 w-8 animate-spin text-primary' />
@@ -33,7 +27,6 @@ export default function CandidateDetailPage() {
 
   if (!candidate) return <div className='p-8 text-center text-muted-foreground'>Candidate not found</div>;
 
-  const matchResults = matches || [];
 
   return (
     <div>
@@ -130,39 +123,14 @@ export default function CandidateDetailPage() {
 
         <Card className='lg:col-span-2'>
           <CardHeader>
-            <CardTitle className='text-base'>Match Results ({matchResults.length})</CardTitle>
+            <CardTitle className='text-base'>CV Preview</CardTitle>
           </CardHeader>
-          <CardContent>
-            {matchResults.length === 0 ? (
-              <p className='text-sm text-muted-foreground text-center py-8'>No match results for this candidate</p>
-            ) : (
-              <div className='space-y-3'>
-                {[...matchResults]
-                  .sort((a, b) => b.score - a.score)
-                  .map((m) => (
-                    <div key={m.id} className='rounded-lg border p-4'>
-                      <div className='flex items-center justify-between mb-2'>
-                        <Link to={`/hr/jobs/${m.jobId}`} className='font-medium text-primary hover:underline'>
-                          {m.jobTitle}
-                        </Link>
-                        <div className='flex items-center gap-2'>
-                          {m.score >= 80 && <span className='text-xs font-semibold text-success'>⭐ High Match</span>}
-                          <ScoreBadge score={m.score} />
-                        </div>
-                      </div>
-                      <p className='text-xs text-muted-foreground'>Matched on {formatDate(m.createdAt)}</p>
-                      <div className='mt-2 grid grid-cols-3 gap-2'>
-                        {Object.entries(m.details).map(([key, val]) => (
-                          <div key={key} className='rounded-md bg-muted p-2 text-center'>
-                            <p className='text-xs text-muted-foreground capitalize'>{key.replace(/([A-Z])/g, ' $1')}</p>
-                            <p className='text-sm font-semibold'>{String(val)}%</p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-              </div>
-            )}
+          <CardContent className='aspect-[3/4] flex items-center justify-center bg-muted rounded-md'>
+            <div className='text-center space-y-2'>
+              <FileText className='h-12 w-12 text-muted-foreground mx-auto' />
+              <p className='text-muted-foreground'>CV Content Preview Coming Soon</p>
+              <p className='text-xs text-muted-foreground/60'>{candidate.cvFileName}</p>
+            </div>
           </CardContent>
         </Card>
       </div>
