@@ -9,7 +9,7 @@ export interface DepartmentContact {
 }
 
 export interface Department {
-  id: string;
+  id: number;
   code: string;
   name: string;
   manager?: string;
@@ -18,8 +18,8 @@ export interface Department {
 }
 
 export interface Job {
-  id: string;
-  departmentId: string;
+  id: number;
+  departmentId: number;
   departmentName: string;
   title: string;
   salary?: string;
@@ -36,7 +36,7 @@ export interface Job {
 }
 
 export interface Candidate {
-  id: string;
+  id: number;
   name: string;
   email: string;
   phone?: string;
@@ -50,10 +50,10 @@ export interface Candidate {
 }
 
 export interface CVMatch {
-  id: string;
-  candidateId: string;
+  id: number;
+  candidateId: number;
   candidateName: string;
-  jobId: string;
+  jobId: number;
   jobTitle: string;
   score: number;
   details: Record<string, unknown>;
@@ -63,7 +63,7 @@ export interface CVMatch {
 export type MatchQueueStatus = 'queued' | 'processing' | 'done';
 
 export interface MatchQueueItem {
-  candidateId: string;
+  candidateId: number;
   candidateName: string;
   status: MatchQueueStatus;
 }
@@ -76,4 +76,17 @@ export interface DashboardStats {
   extractsComplete: number;
   extractsPending: number;
   extractFailures: number;
+}
+
+export interface CodeResponse<T> {
+  success: boolean;
+  message: string;
+  data: T;
+}
+
+export interface ApiErrorResponse {
+  success: boolean;
+  message: string;
+  errorCode?: string;
+  timestamp?: string;
 }

@@ -9,52 +9,151 @@ import {
 } from '../types/api';
 
 export const departmentService = {
-  getAll: () => apiClient.get<Department[]>('/departments').then(res => res.data),
-  getById: (id: string) => apiClient.get<Department>(`/departments/${id}`).then(res => res.data),
+  getAll: async (): Promise<Department[]> => {
+    try {
+      return await apiClient.get('/departments');
+    } catch (error) {
+      console.error('Failed to fetch departments:', error);
+      throw error;
+    }
+  },
+  getById: async (id: string): Promise<Department> => {
+    try {
+      return await apiClient.get(`/departments/${id}`);
+    } catch (error) {
+      console.error(`Failed to fetch department ${id}:`, error);
+      throw error;
+    }
+  },
 };
 
 export const jobService = {
-  getAll: (params?: { status?: string; departmentId?: string; search?: string }) =>
-    apiClient.get<Job[]>('/jobs', { params }).then(res => res.data),
-  getById: (id: string) => apiClient.get<Job>(`/jobs/${id}`).then(res => res.data),
-  create: (data: Partial<Job>) => apiClient.post<Job>('/jobs', data).then(res => res.data),
-  update: (id: string, data: Partial<Job>) => apiClient.put<Job>(`/jobs/${id}`, data).then(res => res.data),
+  getAll: async (params?: { status?: string; departmentId?: string; search?: string }): Promise<Job[]> => {
+    try {
+      return await apiClient.get('/jobs', { params });
+    } catch (error) {
+      console.error('Failed to fetch jobs:', error);
+      throw error;
+    }
+  },
+  getById: async (id: string): Promise<Job> => {
+    try {
+      return await apiClient.get(`/jobs/${id}`);
+    } catch (error) {
+      console.error(`Failed to fetch job ${id}:`, error);
+      throw error;
+    }
+  },
+  create: async (data: Partial<Job>): Promise<Job> => {
+    try {
+      return await apiClient.post('/jobs', data);
+    } catch (error) {
+      console.error('Failed to create job:', error);
+      throw error;
+    }
+  },
+  update: async (id: string, data: Partial<Job>): Promise<Job> => {
+    try {
+      return await apiClient.put(`/jobs/${id}`, data);
+    } catch (error) {
+      console.error(`Failed to update job ${id}:`, error);
+      throw error;
+    }
+  },
 };
 
 export const candidateService = {
-  getAll: (params?: { extractStatus?: string; employmentTag?: string; search?: string }) =>
-    apiClient.get<Candidate[]>('/candidates', { params }).then(res => res.data),
-  getById: (id: string) => apiClient.get<Candidate>(`/candidates/${id}`).then(res => res.data),
-  uploadCV: (file: File) => {
-    const formData = new FormData();
-    formData.append('file', file);
-    return apiClient.post<Candidate>('/candidates/upload', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    }).then(res => res.data);
+  getAll: async (params?: { extractStatus?: string; employmentTag?: string; search?: string }): Promise<Candidate[]> => {
+    try {
+      return await apiClient.get('/candidates', { params });
+    } catch (error) {
+      console.error('Failed to fetch candidates:', error);
+      throw error;
+    }
+  },
+  getById: async (id: string): Promise<Candidate> => {
+    try {
+      return await apiClient.get(`/candidates/${id}`);
+    } catch (error) {
+      console.error(`Failed to fetch candidate ${id}:`, error);
+      throw error;
+    }
+  },
+  uploadCV: async (file: File): Promise<Candidate> => {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      return await apiClient.post('/candidates/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+    } catch (error) {
+      console.error('Failed to upload CV:', error);
+      throw error;
+    }
   },
 };
 
 export const matchService = {
-  getByJobId: (jobId: string) => apiClient.get<CVMatch[]>(`/matches/job/${jobId}`).then(res => res.data),
-  getByCandidateId: (candidateId: string) => apiClient.get<CVMatch[]>(`/matches/candidate/${candidateId}`).then(res => res.data),
-  getQueue: () => apiClient.get<MatchQueueItem[]>('/matches/queue').then(res => res.data),
-  triggerMatch: (jobId: string, candidateIds: string[]) =>
-    apiClient.post('/matches/trigger', { jobId, candidateIds }).then(res => res.data),
+  getByJobId: async (jobId: string): Promise<CVMatch[]> => {
+    try {
+      return await apiClient.get(`/matches/job/${jobId}`);
+    } catch (error) {
+      console.error(`Failed to fetch matches for job ${jobId}:`, error);
+      throw error;
+    }
+  },
+  getByCandidateId: async (candidateId: string): Promise<CVMatch[]> => {
+    try {
+      return await apiClient.get(`/matches/candidate/${candidateId}`);
+    } catch (error) {
+      console.error(`Failed to fetch matches for candidate ${candidateId}:`, error);
+      throw error;
+    }
+  },
+  getQueue: async (): Promise<MatchQueueItem[]> => {
+    try {
+      return await apiClient.get('/matches/queue');
+    } catch (error) {
+      console.error('Failed to fetch match queue:', error);
+      throw error;
+    }
+  },
+  triggerMatch: async (jobId: string, candidateIds: string[]): Promise<void> => {
+    try {
+      await apiClient.post('/matches/trigger', { jobId, candidateIds });
+    } catch (error) {
+      console.error('Failed to trigger match:', error);
+      throw error;
+    }
+  },
 };
 
 export const statsService = {
   getSummary: async (): Promise<DashboardStats> => {
-    const response = await apiClient.get('/stats/summary');
-    return response.data;
+    try {
+      return await apiClient.get('/stats/summary');
+    } catch (error) {
+      console.error('Failed to fetch stats summary:', error);
+      throw error;
+    }
   },
 };
 
 export const adminService = {
   getExtractErrors: async (): Promise<Candidate[]> => {
-    const response = await apiClient.get('/admin/extract-errors');
-    return response.data;
+    try {
+      return await apiClient.get('/admin/extract-errors');
+    } catch (error) {
+      console.error('Failed to fetch extract errors:', error);
+      throw error;
+    }
   },
   retryExtract: async (candidateId: string): Promise<void> => {
-    await apiClient.post(`/admin/extract-retry/${candidateId}`);
+    try {
+      await apiClient.post(`/admin/extract-retry/${candidateId}`);
+    } catch (error) {
+      console.error(`Failed to retry extraction for candidate ${candidateId}:`, error);
+      throw error;
+    }
   },
 };

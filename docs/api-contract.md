@@ -11,6 +11,24 @@ All requests should include a Bearer token in the Authorization header:
 
 ---
 
+## Global Response Wrapper
+
+All API responses are wrapped in a standard `CodeResponse` object.
+
+```json
+{
+  "success": "boolean",
+  "message": "string (e.g., 'SUCCESS' or error message)",
+  "data": "T | null"
+}
+```
+
+- **success**: Indicates if the operation was successful.
+- **message**: Provides additional context, especially in case of errors.
+- **data**: The actual payload of the response (e.g., Department, Job, List of Candidates).
+
+---
+
 ## Data Models
 
 ### Department
@@ -106,40 +124,39 @@ All requests should include a Bearer token in the Authorization header:
 
 ### 1. Departments
 - **GET /departments**
-  - Returns a list of all departments.
+  - Returns `CodeResponse<List<Department>>`.
 - **GET /departments/:id**
-  - Returns details of a specific department.
+  - Returns `CodeResponse<Department>`.
 
 ### 2. Jobs
 - **GET /jobs**
   - Query Params: `status`, `departmentId`, `search`
-  - Returns a paginated list of jobs.
+  - Returns `CodeResponse<List<Job>>`.
 - **GET /jobs/:id**
-  - Returns details of a specific job.
+  - Returns `CodeResponse<Job>`.
 - **POST /jobs**
-  - Creates a new job posting.
+  - Creates a new job posting. Returns `CodeResponse<Job>`.
 - **PUT /jobs/:id**
-  - Updates an existing job.
+  - Updates an existing job. Returns `CodeResponse<Job>`.
 
 ### 3. Candidates
 - **GET /candidates**
   - Query Params: `extractStatus`, `employmentTag`, `search`
-  - Returns a paginated list of candidates.
+  - Returns `CodeResponse<List<Candidate>>`.
 - **GET /candidates/:id**
-  - Returns details of a specific candidate.
+  - Returns `CodeResponse<Candidate>`.
 - **POST /candidates/upload**
   - Multipart/form-data: `file` (PDF/DOCX)
-  - Uploads a CV and initiates the extraction process. Returns the created candidate object.
+  - Returns `CodeResponse<Candidate>`.
 
 ### 4. Matches
 - **GET /matches/job/:jobId**
-  - Returns all candidates matched for a specific job, sorted by score descending.
+  - Returns `CodeResponse<List<CVMatch>>`.
 - **GET /matches/candidate/:candidateId**
-  - Returns all jobs matched for a specific candidate.
+  - Returns `CodeResponse<List<CVMatch>>`.
 - **GET /matches/queue**
-  - **Mục đích**: Theo dõi tiến độ các tác vụ AI chạy ngầm. Frontend sử dụng API này để hiển thị thanh trạng thái (Scanning/Matching) cho người dùng.
-  - **Dữ liệu trả về**: Danh sách `MatchQueueItem[]`
-  - **Chi tiết item**:
+  - Returns `CodeResponse<List<MatchQueueItem>>`.
+  - Item detail:
     ```json
     {
       "candidateId": "string",
@@ -149,11 +166,12 @@ All requests should include a Bearer token in the Authorization header:
     ```
 - **POST /matches/trigger**
   - Body: `{ "jobId": "string", "candidateIds": ["string"] }`
-  - Triggers the matching process for the selected candidates against the specified job.
+  - Returns `CodeResponse<Void>`.
 
 ### 5. Statistics (Dashboard)
 - **GET /stats/summary**
-  - Returns high-level metrics for the dashboard:
+  - Returns `CodeResponse<DashboardStats>`.
+  - DashboardStats detail:
     ```json
     {
       "activeJobs": "number",
@@ -168,5 +186,4 @@ All requests should include a Bearer token in the Authorization header:
 
 ### 6. Admin & System
 - **GET /admin/extract-errors**
-  - Returns a list of candidates whose CV extraction failed, including error details.
-  - Useful for debugging AI processing issues.
+  - Returns `CodeResponse<List<Candidate>>`.

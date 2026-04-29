@@ -14,6 +14,7 @@ import {
   EmploymentBadge,
 } from '@/shared/components/StatusBadges';
 import PageHeader from '@/shared/components/PageHeader';
+import { formatDate } from '@/shared/lib/utils';
 import { EditJobForm } from '@/shared/components/hr/EditJobForm';
 import { ArrowLeft, Play, Loader2 } from 'lucide-react';
 import { useToast } from '@/shared/hooks/use-toast';
@@ -138,7 +139,7 @@ export default function JobDetailPage() {
         <TabsContent value='workflow' className='mt-0 space-y-6'>
           <div className='flex items-center gap-3'>
             <JobStatusBadge status={job.status} />
-            <span className='text-sm text-muted-foreground'>Created {job.createdAt}</span>
+            <span className='text-sm text-muted-foreground'>Created {formatDate(job.createdAt)}</span>
           </div>
 
           <Card>
@@ -244,7 +245,7 @@ export default function JobDetailPage() {
                       >
                         <div>
                           <p className='text-sm font-medium'>{m.candidateName}</p>
-                          <p className='text-xs text-muted-foreground'>Matched {m.createdAt}</p>
+                          <p className='text-xs text-muted-foreground'>Matched {formatDate(m.createdAt)}</p>
                         </div>
                         <div className='flex items-center gap-2'>
                           {m.score >= 80 && <span className='text-xs font-semibold text-success'>⭐ High Match</span>}

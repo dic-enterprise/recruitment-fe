@@ -5,6 +5,7 @@ import { Button } from '@/shared/components/ui/button';
 import { candidateService, matchService } from '@/shared/lib/api-services';
 import { ExtractStatusBadge, EmploymentBadge, ScoreBadge } from '@/shared/components/StatusBadges';
 import PageHeader from '@/shared/components/PageHeader';
+import { formatDate, formatDateTime } from '@/shared/lib/utils';
 import { ArrowLeft, Mail, Phone, FileText, AlertCircle, Loader2 } from 'lucide-react';
 
 export default function CandidateDetailPage() {
@@ -72,7 +73,7 @@ export default function CandidateDetailPage() {
               </div>
               <div className='flex items-center gap-2'>
                 <span className='text-muted-foreground'>Uploaded:</span>
-                {candidate.uploadedAt}
+                {formatDateTime(candidate.uploadedAt)}
               </div>
               <div className='flex gap-2 pt-2'>
                 <ExtractStatusBadge status={candidate.extractStatus} />
@@ -149,7 +150,7 @@ export default function CandidateDetailPage() {
                           <ScoreBadge score={m.score} />
                         </div>
                       </div>
-                      <p className='text-xs text-muted-foreground'>Matched on {m.createdAt}</p>
+                      <p className='text-xs text-muted-foreground'>Matched on {formatDate(m.createdAt)}</p>
                       <div className='mt-2 grid grid-cols-3 gap-2'>
                         {Object.entries(m.details).map(([key, val]) => (
                           <div key={key} className='rounded-md bg-muted p-2 text-center'>

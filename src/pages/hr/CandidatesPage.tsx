@@ -7,6 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { candidateService } from '@/shared/lib/api-services';
 import { ExtractStatusBadge, EmploymentBadge } from '@/shared/components/StatusBadges';
 import PageHeader from '@/shared/components/PageHeader';
+import { formatDate, formatDateTime } from '@/shared/lib/utils';
 import { Search, Loader2, Upload } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
 import { useToast } from '@/shared/hooks/use-toast';
@@ -151,7 +152,7 @@ export default function CandidatesPage() {
                 <TableCell>
                   <EmploymentBadge tag={c.employmentTag} />
                 </TableCell>
-                <TableCell className='text-muted-foreground'>{c.uploadedAt}</TableCell>
+                <TableCell className='text-muted-foreground'>{formatDateTime(c.uploadedAt)}</TableCell>
               </TableRow>
             ))}
             {(!candidates || candidates.length === 0) && !isLoading && !uploadMutation.isPending && (
