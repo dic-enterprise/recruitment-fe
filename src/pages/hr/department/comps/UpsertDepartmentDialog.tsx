@@ -1,23 +1,40 @@
-import React, { useMemo, useState } from 'react';
-import type { Department, DepartmentContact } from '@/shared/lib/mock-data.ts';
+import React, { useMemo } from 'react';
+import type { Department, DepartmentContact } from '@/shared/types/api.ts';
 import { BaseAction, BaseDialog, BaseHeader } from '@/shared/components/dialog';
+import { useMutation } from '@tanstack/react-query';
+import { departmentService } from '@/shared/lib/api-services.ts';
 import useForm from '@/shared/hooks/useForm.ts';
-import { AppValidation, sleep } from '@/shared/utils/Utils.ts';
+import { AppValidation } from '@/shared/utils/Utils.ts';
 import type { CloseModal } from '@/shared/hooks/useModal.ts';
 import { AppInput } from '@/shared/components/AppInput.tsx';
+import { toast } from 'sonner';
 
 type Nullable<T> = T | null | undefined;
 
 interface UpsertDepartmentDialogProps {
   onClose: CloseModal;
   department: Nullable<Department>;
-  onSubmit: (department: Department) => void;
+  onSubmit: () => void;
 }
 
 const UpsertDepartmentDialog: React.FC<UpsertDepartmentDialogProps> = (props) => {
   const { department, onSubmit, onClose } = props;
-  const [isLoading, setLoading] = useState(false);
   const isCreateNew = department == null;
+
+  const mutation = useMutation({
+    mutationFn: (payload: Department) => 
+      isCreateNew 
+        ? departmentService.create(payload) 
+        : departmentService.update(department.id, payload),
+    onSuccess: () => {
+      toast.success(isCreateNew ? 'Tạo phòng ban thành công' : 'Cập nhật phòng ban thành công');
+      onSubmit();
+      onClose();
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Thao tác thất bại');
+    }
+  });
 
   type DepartmentForm = {
     name: string;
@@ -75,21 +92,18 @@ const UpsertDepartmentDialog: React.FC<UpsertDepartmentDialogProps> = (props) =>
           ]
         : [];
 
-      setLoading(true);
-      const payload: Department = {
-        id: department?.id ?? `dept-${Date.now()}`,
+      const payload: any = {
         name: values.name.trim(),
         code: values.code.trim().toUpperCase(),
         manager: values.manager.trim() || undefined,
         contacts,
-        jobCount: department?.jobCount ?? 0,
       };
-      onSubmit(payload);
-      await sleep(500);
-      setLoading(false);
-      onClose();
+      
+      mutation.mutate(payload as Department);
     },
   });
+
+  const isLoading = mutation.isPending;
 
   return (
     <BaseDialog

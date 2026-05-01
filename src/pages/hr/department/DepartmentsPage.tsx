@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { departmentService } from '@/shared/lib/api-services.ts';
 import PageHeader from '@/shared/components/PageHeader.tsx';
-import { Building2, Mail, Phone, Plus, User } from 'lucide-react';
+import { Building2, Mail, Phone, Plus, User, Pencil } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button.tsx';
 import { BaseTable, type Column } from '@/shared/components/BaseTable.tsx';
 import useModal from '@/shared/hooks/useModal.ts';
@@ -31,19 +31,28 @@ export default function DepartmentsPage() {
     ));
   }
 
+  async function openEditDepartment(dept: Department) {
+    await openModal((close) => (
+      <UpsertDepartmentDialog
+        department={dept}
+        onClose={close}
+        onSubmit={() => {
+          queryClient.invalidateQueries({ queryKey: ['departments'] });
+        }}
+      />
+    ));
+  }
+
   const columns: Column<Department>[] = [
     {
       header: 'Department Name',
       key: 'name',
       width: '300px',
       render: (dept) => (
-        <Link 
-          to={`/hr/departments/${dept.id}`} 
-          className='font-semibold text-primary hover:underline flex items-center gap-2'
-        >
+        <div className='font-semibold flex items-center gap-2'>
           <Building2 className='h-4 w-4 text-muted-foreground' />
           {dept.name}
-        </Link>
+        </div>
       ),
     },
     {
@@ -100,6 +109,17 @@ export default function DepartmentsPage() {
         ) : (
           <span className='text-muted-foreground italic text-xs'>No contact</span>
         )
+      ),
+    },
+    {
+      header: 'Actions',
+      key: 'actions',
+      className: 'text-right',
+      headerClassName: 'text-right',
+      render: (dept) => (
+        <Button variant='ghost' size='sm' onClick={() => openEditDepartment(dept)}>
+          <Pencil className='h-4 w-4' />
+        </Button>
       ),
     },
   ];

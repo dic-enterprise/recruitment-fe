@@ -44,7 +44,7 @@ export interface Candidate {
   cvFileName: string;
   extractStatus: ExtractStatus;
   employmentTag: EmploymentTag;
-  extractError?: { code?: string; message: string };
+  extractError?: { code?: string; message: string; timestamp?: string };
   uploadedAt: string;
   skills?: string[];
   experience?: string;
@@ -57,7 +57,11 @@ export interface CVMatch {
   jobId: number;
   jobTitle: string;
   score: number;
-  details: Record<string, unknown>;
+  details: {
+    skillMatch: number;
+    experienceMatch: number;
+    educationMatch: number;
+  };
   createdAt: string;
 }
 
@@ -91,3 +95,16 @@ export interface ApiErrorResponse {
   errorCode?: string;
   timestamp?: string;
 }
+
+export interface AIProviderConfig {
+  id?: number;
+  name: string;
+  providerType: 'OPENAI' | 'GEMINI';
+  enabled: boolean;
+  apiKey: string;
+  apiUrl: string;
+  model: string;
+  isActive: boolean;
+}
+
+export type AIConfig = AIProviderConfig[];

@@ -1,19 +1,38 @@
 import { useParams } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
-import { candidates } from '@/shared/lib/mock-data';
+import { candidateService } from '@/shared/lib/api-services';
 import { ExtractStatusBadge } from '@/shared/components/StatusBadges';
-import { FileText, AlertCircle } from 'lucide-react';
+import { FileText, AlertCircle, Loader2 } from 'lucide-react';
 
 export default function PublicCVStatusPage() {
   const { candidateId } = useParams();
-  const candidate = candidates.find((c) => c.id === candidateId);
 
-  if (!candidate) {
+  const { data: candidate, isLoading, error } = useQuery({
+    queryKey: ['public-candidate', candidateId],
+    queryFn: () => candidateService.getById(candidateId!),
+    enabled: !!candidateId,
+    refetchInterval: (status) => {
+      // Tự động refetch mỗi 3 giây nếu đang xử lý
+      const extractStatus = status?.state?.data?.extractStatus;
+      return extractStatus === 'PENDING' || extractStatus === 'SCANNING' ? 3000 : false;
+    }
+  });
+
+  if (isLoading) {
+    return (
+      <div className='flex min-h-screen items-center justify-center bg-background p-4'>
+        <Loader2 className='h-8 w-8 animate-spin text-primary' />
+      </div>
+    );
+  }
+
+  if (error || !candidate) {
     return (
       <div className='flex min-h-screen items-center justify-center bg-background p-4'>
         <Card className='w-full max-w-md text-center'>
           <CardContent className='py-12'>
-            <p className='text-muted-foreground'>Candidate not found.</p>
+            <p className='text-muted-foreground'>{error instanceof Error ? error.message : 'Candidate not found.'}</p>
           </CardContent>
         </Card>
       </div>

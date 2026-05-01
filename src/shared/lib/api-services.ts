@@ -5,7 +5,8 @@ import {
   Candidate,
   CVMatch,
   DashboardStats,
-  MatchQueueItem
+  MatchQueueItem,
+  AIConfig
 } from '../types/api';
 
 export const departmentService = {
@@ -22,6 +23,22 @@ export const departmentService = {
       return await apiClient.get(`/departments/${id}`);
     } catch (error) {
       console.error(`Failed to fetch department ${id}:`, error);
+      throw error;
+    }
+  },
+  create: async (data: Partial<Department>): Promise<Department> => {
+    try {
+      return await apiClient.post('/departments', data);
+    } catch (error) {
+      console.error('Failed to create department:', error);
+      throw error;
+    }
+  },
+  update: async (id: string, data: Partial<Department>): Promise<Department> => {
+    try {
+      return await apiClient.put(`/departments/${id}`, data);
+    } catch (error) {
+      console.error(`Failed to update department ${id}:`, error);
       throw error;
     }
   },
@@ -161,6 +178,30 @@ export const adminService = {
       await apiClient.post(`/admin/extract-retry/${candidateId}`);
     } catch (error) {
       console.error(`Failed to retry extraction for candidate ${candidateId}:`, error);
+      throw error;
+    }
+  },
+  getAIConfig: async (): Promise<AIConfig> => {
+    try {
+      return await apiClient.get('/admin/ai-config');
+    } catch (error) {
+      console.error('Failed to fetch AI configurations:', error);
+      throw error;
+    }
+  },
+  createAIProvider: async (provider: AIProviderConfig): Promise<AIProviderConfig> => {
+    try {
+      return await apiClient.post('/admin/ai-config', provider);
+    } catch (error) {
+      console.error('Failed to create AI provider:', error);
+      throw error;
+    }
+  },
+  updateAIProvider: async (id: number, provider: AIProviderConfig): Promise<AIProviderConfig> => {
+    try {
+      return await apiClient.put(`/admin/ai-config/${id}`, provider);
+    } catch (error) {
+      console.error(`Failed to update AI provider ${id}:`, error);
       throw error;
     }
   },

@@ -8,7 +8,6 @@ import Index from './pages/Index';
 import NotFound from './pages/NotFound';
 import DashboardPage from './pages/hr/DashboardPage';
 import DepartmentsPage from './pages/hr/department/DepartmentsPage.tsx';
-import DepartmentDetailPage from './pages/hr/DepartmentDetailPage';
 import JobsPage from './pages/hr/JobsPage';
 import MatchResultsPage from './pages/hr/MatchResultsPage';
 import CandidatesPage from './pages/hr/CandidatesPage';
@@ -16,6 +15,7 @@ import CandidateDetailPage from './pages/hr/CandidateDetailPage';
 import PublicUploadPage from './pages/public/PublicUploadPage';
 import PublicCVStatusPage from './pages/public/PublicCVStatusPage';
 import ExtractErrorsPage from './pages/admin/ExtractErrorsPage';
+import AIConfigPage from './pages/admin/AIConfigPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -68,14 +68,6 @@ const App = () => (
             }
           />
           <Route
-            path='/hr/departments/:departmentId'
-            element={
-              <AppLayout>
-                <DepartmentDetailPage />
-              </AppLayout>
-            }
-          />
-          <Route
             path='/hr/jobs'
             element={
               <AppLayout>
@@ -113,6 +105,14 @@ const App = () => (
             element={
               <AppLayout>
                 <ExtractErrorsPage />
+              </AppLayout>
+            }
+          />
+          <Route
+            path='/admin/ai-config'
+            element={
+              <AppLayout>
+                <AIConfigPage />
               </AppLayout>
             }
           />

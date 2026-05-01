@@ -34,7 +34,7 @@ All API responses are wrapped in a standard `CodeResponse` object.
 ### Department
 ```json
 {
-  "id": "string",
+  "id": "number",
   "code": "string",
   "name": "string",
   "manager": "string?",
@@ -52,8 +52,8 @@ All API responses are wrapped in a standard `CodeResponse` object.
 ### Job
 ```json
 {
-  "id": "string",
-  "departmentId": "string",
+  "id": "number",
+  "departmentId": "number",
   "departmentName": "string",
   "title": "string",
   "salary": "string?",
@@ -74,7 +74,7 @@ All API responses are wrapped in a standard `CodeResponse` object.
 ### Candidate
 ```json
 {
-  "id": "string",
+  "id": "number",
   "name": "string",
   "email": "string",
   "phone": "string?",
@@ -104,10 +104,10 @@ All API responses are wrapped in a standard `CodeResponse` object.
 ### CVMatch
 ```json
 {
-  "id": "string",
-  "candidateId": "string",
+  "id": "number",
+  "candidateId": "number",
   "candidateName": "string",
-  "jobId": "string",
+  "jobId": "number",
   "jobTitle": "string",
   "score": "number",
   "details": {
@@ -128,6 +128,10 @@ All API responses are wrapped in a standard `CodeResponse` object.
   - Returns `CodeResponse<List<Department>>`.
 - **GET /departments/:id**
   - Returns `CodeResponse<Department>`.
+- **POST /departments**
+  - Creates a new department. Returns `CodeResponse<Department>`.
+- **PUT /departments/:id**
+  - Updates an existing department. Returns `CodeResponse<Department>`.
 
 ### 2. Jobs
 - **GET /jobs**
@@ -162,13 +166,13 @@ All API responses are wrapped in a standard `CodeResponse` object.
   - Item detail:
     ```json
     {
-      "candidateId": "string",
+      "candidateId": "number",
       "candidateName": "string",
       "status": "queued | processing | done"
     }
     ```
 - **POST /matches/trigger**
-  - Body: `{ "jobId": "string", "candidateIds": ["string"] }`
+  - Body: `{ "jobId": "number", "candidateIds": ["number"] }`
   - Returns `CodeResponse<Void>`.
 
 ### 5. Statistics (Dashboard)
@@ -190,3 +194,25 @@ All API responses are wrapped in a standard `CodeResponse` object.
 ### 6. Admin & System
 - **GET /admin/extract-errors**
   - Returns `CodeResponse<List<Candidate>>`.
+- **GET /admin/ai-config**
+  - Returns `CodeResponse<List<AIProviderConfig>>`.
+- **POST /admin/ai-config**
+  - Body: `AIProviderConfig` object.
+  - Returns `CodeResponse<AIProviderConfig>`.
+- **PUT /admin/ai-config/:id**
+  - Body: `AIProviderConfig` object.
+  - Returns `CodeResponse<AIProviderConfig>`.
+
+#### AIProviderConfig Detail:
+```json
+{
+  "id": "number?",
+  "name": "string",
+  "providerType": "OPENAI | GEMINI",
+  "enabled": "boolean",
+  "apiKey": "string",
+  "apiUrl": "string",
+  "model": "string",
+  "isActive": "boolean"
+}
+```
