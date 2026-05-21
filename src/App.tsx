@@ -12,6 +12,7 @@ import JobsPage from './pages/hr/JobsPage';
 import MatchResultsPage from './pages/hr/MatchResultsPage';
 import CandidatesPage from './pages/hr/CandidatesPage';
 import CandidateDetailPage from './pages/hr/CandidateDetailPage';
+import SchedulePage from './pages/hr/SchedulePage';
 import PublicUploadPage from './pages/public/PublicUploadPage';
 import PublicCVStatusPage from './pages/public/PublicCVStatusPage';
 import ExtractErrorsPage from './pages/admin/ExtractErrorsPage';
@@ -96,6 +97,14 @@ const App = () => (
             element={
               <AppLayout>
                 <CandidateDetailPage />
+              </AppLayout>
+            }
+          />
+          <Route
+            path='/hr/schedule'
+            element={
+              <AppLayout>
+                <SchedulePage />
               </AppLayout>
             }
           />

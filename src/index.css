@@ -126,3 +126,28 @@
     transform: translateY(0);
   }
 }
+
+/* react-big-calendar — align with app theme */
+.schedule-calendar .rbc-calendar {
+  font-family: inherit;
+}
+.schedule-calendar .rbc-toolbar button {
+  border-radius: var(--radius);
+  border-color: hsl(var(--border));
+  color: hsl(var(--foreground));
+}
+.schedule-calendar .rbc-toolbar button.rbc-active,
+.schedule-calendar .rbc-toolbar button:hover {
+  background: hsl(var(--accent));
+  color: hsl(var(--accent-foreground));
+}
+.schedule-calendar .rbc-header,
+.schedule-calendar .rbc-off-range-bg {
+  background: hsl(var(--muted));
+}
+.schedule-calendar .rbc-today {
+  background: hsl(var(--primary) / 0.08);
+}
+.schedule-calendar .rbc-event {
+  padding: 2px 6px;
+}

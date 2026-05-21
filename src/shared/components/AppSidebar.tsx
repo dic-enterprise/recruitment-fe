@@ -1,12 +1,22 @@
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/shared/lib/utils.ts';
-import { LayoutDashboard, Building2, Briefcase, Users, AlertTriangle, CheckSquare, Settings } from 'lucide-react';
+import {
+  LayoutDashboard,
+  Building2,
+  Briefcase,
+  Users,
+  AlertTriangle,
+  CheckSquare,
+  Settings,
+  CalendarDays,
+} from 'lucide-react';
 
 const hrLinks = [
   { to: '/hr/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/hr/matches', label: 'Matching CV', icon: CheckSquare },
   { to: '/hr/candidates', label: 'Candidates', icon: Users },
   { to: '/hr/jobs', label: 'Jobs', icon: Briefcase },
+  { to: '/hr/schedule', label: 'Schedule', icon: CalendarDays },
   { to: '/hr/departments', label: 'Departments', icon: Building2 },
 ];
 

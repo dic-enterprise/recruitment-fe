@@ -109,3 +109,20 @@ export interface AIProviderConfig {
 }
 
 export type AIConfig = AIProviderConfig[];
+
+export type InterviewStatus = 'SCHEDULED' | 'COMPLETED' | 'CANCELLED';
+
+export interface InterviewSchedule {
+  id: number;
+  candidateId: number;
+  candidateName: string;
+  jobId: number;
+  jobTitle: string;
+  startAt: string;
+  endAt: string;
+  location?: string;
+  meetingLink?: string;
+  interviewer?: string;
+  status: InterviewStatus;
+  notes?: string;
+}

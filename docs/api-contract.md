@@ -247,7 +247,31 @@ The frontend treats a CV as previewable only when the browser can render it inli
     }
     ```
 
-### 6. Admin & System
+### 6. Interview schedules (Schedule)
+- **GET /schedules/interviews**
+  - Query Params: `from` (ISO8601, inclusive), `to` (ISO8601, exclusive or inclusive — document as inclusive range on backend).
+  - Returns `CodeResponse<List<InterviewSchedule>>` for calendar views (month / week / day).
+  - Used by HR page `/hr/schedule`.
+
+#### InterviewSchedule
+```json
+{
+  "id": 1,
+  "candidateId": 6,
+  "candidateName": "string",
+  "jobId": 2,
+  "jobTitle": "string",
+  "startAt": "ISO8601 string",
+  "endAt": "ISO8601 string",
+  "location": "string?",
+  "meetingLink": "string?",
+  "interviewer": "string?",
+  "status": "SCHEDULED | COMPLETED | CANCELLED",
+  "notes": "string?"
+}
+```
+
+### 7. Admin & System
 - **GET /admin/extract-errors**
   - Returns `CodeResponse<List<Candidate>>`.
 - **GET /admin/ai-config**

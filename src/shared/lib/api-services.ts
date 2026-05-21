@@ -8,7 +8,8 @@ import {
   DashboardStats,
   MatchQueueItem,
   AIConfig,
-  AIProviderConfig
+  AIProviderConfig,
+  InterviewSchedule
 } from '../types/api';
 
 export const departmentService = {
@@ -206,6 +207,17 @@ export const adminService = {
       return normalizeAIConfig(raw);
     } catch (error) {
       console.error('Failed to save AI configurations:', error);
+      throw error;
+    }
+  },
+};
+
+export const scheduleService = {
+  getInterviews: async (params: { from: string; to: string }): Promise<InterviewSchedule[]> => {
+    try {
+      return await apiClient.get('/schedules/interviews', { params });
+    } catch (error) {
+      console.error('Failed to fetch interview schedules:', error);
       throw error;
     }
   },
