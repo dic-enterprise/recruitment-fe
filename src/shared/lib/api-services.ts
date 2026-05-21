@@ -1,4 +1,5 @@
 import apiClient from './api-client';
+import { normalizeAIConfig } from './ai-config-utils';
 import {
   Department,
   Job,
@@ -6,7 +7,8 @@ import {
   CVMatch,
   DashboardStats,
   MatchQueueItem,
-  AIConfig
+  AIConfig,
+  AIProviderConfig
 } from '../types/api';
 
 export const departmentService = {
@@ -108,6 +110,14 @@ export const candidateService = {
       throw error;
     }
   },
+  downloadCv: async (id: string): Promise<Blob> => {
+    try {
+      return await apiClient.get(`/candidates/${id}/cv/download`, { responseType: 'blob' });
+    } catch (error) {
+      console.error(`Failed to download CV for candidate ${id}:`, error);
+      throw error;
+    }
+  },
 };
 
 export const matchService = {
@@ -183,25 +193,19 @@ export const adminService = {
   },
   getAIConfig: async (): Promise<AIConfig> => {
     try {
-      return await apiClient.get('/admin/ai-config');
+      const raw = await apiClient.get('/admin/ai-config');
+      return normalizeAIConfig(raw);
     } catch (error) {
       console.error('Failed to fetch AI configurations:', error);
       throw error;
     }
   },
-  createAIProvider: async (provider: AIProviderConfig): Promise<AIProviderConfig> => {
+  saveAIConfig: async (configs: AIProviderConfig[]): Promise<AIConfig> => {
     try {
-      return await apiClient.post('/admin/ai-config', provider);
+      const raw = await apiClient.put('/admin/ai-config', configs);
+      return normalizeAIConfig(raw);
     } catch (error) {
-      console.error('Failed to create AI provider:', error);
-      throw error;
-    }
-  },
-  updateAIProvider: async (id: number, provider: AIProviderConfig): Promise<AIProviderConfig> => {
-    try {
-      return await apiClient.put(`/admin/ai-config/${id}`, provider);
-    } catch (error) {
-      console.error(`Failed to update AI provider ${id}:`, error);
+      console.error('Failed to save AI configurations:', error);
       throw error;
     }
   },

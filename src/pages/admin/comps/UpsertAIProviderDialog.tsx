@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import type { AIProviderConfig } from '@/shared/types/api.ts';
 import { BaseAction, BaseDialog, BaseHeader } from '@/shared/components/dialog';
 import { useMutation } from '@tanstack/react-query';
@@ -14,41 +14,55 @@ import { Switch } from '@/shared/components/ui/switch';
 
 type Nullable<T> = T | null | undefined;
 
+const EMPTY_CONFIG: AIProviderConfig = {
+  name: '',
+  providerType: 'OPENAI',
+  enabled: true,
+  apiKey: '',
+  apiUrl: '',
+  model: '',
+};
+
 interface UpsertAIProviderDialogProps {
   onClose: CloseModal;
   provider: Nullable<AIProviderConfig>;
+  allConfigs: AIProviderConfig[];
   onSubmit: () => void;
 }
 
+function buildNextList(
+  allConfigs: AIProviderConfig[],
+  payload: AIProviderConfig,
+  isCreate: boolean,
+): AIProviderConfig[] {
+  if (isCreate) {
+    const { id: _id, ...rest } = payload;
+    return [...allConfigs, rest];
+  }
+  if (payload.id != null) {
+    return allConfigs.map((c) => (c.id === payload.id ? payload : c));
+  }
+  return [...allConfigs, payload];
+}
+
 const UpsertAIProviderDialog: React.FC<UpsertAIProviderDialogProps> = (props) => {
-  const { provider, onSubmit, onClose } = props;
-  const isCreateNew = provider == null;
+  const { provider, allConfigs, onSubmit, onClose } = props;
+  const isCreate = provider == null;
 
   const mutation = useMutation({
-    mutationFn: (payload: AIProviderConfig) => 
-      isCreateNew 
-        ? adminService.createAIProvider(payload) 
-        : adminService.updateAIProvider(provider.id!, payload),
+    mutationFn: (payload: AIProviderConfig) => adminService.saveAIConfig(buildNextList(allConfigs, payload, isCreate)),
     onSuccess: () => {
-      toast.success(isCreateNew ? 'Tạo cấu hình AI thành công' : 'Cập nhật cấu hình AI thành công');
+      toast.success(isCreate ? 'Tạo cấu hình AI thành công' : 'Cập nhật cấu hình AI thành công');
       onSubmit();
       onClose();
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error(error.message || 'Thao tác thất bại');
-    }
+    },
   });
 
   const form = useForm<AIProviderConfig>({
-    initialValues: provider || {
-      name: '',
-      providerType: 'OPENAI',
-      enabled: true,
-      apiKey: '',
-      apiUrl: '',
-      model: '',
-      isActive: false,
-    },
+    initialValues: provider ?? EMPTY_CONFIG,
     enableReinitialize: true,
     validate(values) {
       return AppValidation.getErrorValidate(values, {
@@ -64,32 +78,40 @@ const UpsertAIProviderDialog: React.FC<UpsertAIProviderDialogProps> = (props) =>
   });
 
   const isLoading = mutation.isPending;
+  const providerType = form.values.providerType;
 
   return (
     <BaseDialog
       isLoading={isLoading}
       onDismiss={() => onClose(undefined)}
-      header={<BaseHeader title={isCreateNew ? 'Create AI Provider' : 'Edit AI Provider'} />}
+      header={
+        <BaseHeader
+          title={isCreate ? 'Thêm cấu hình AI' : 'Chỉnh sửa cấu hình AI'}
+          description="Lưu toàn bộ danh sách cấu hình lên server (PUT /admin/ai-config)."
+        />
+      }
       body={
         <div className='grid gap-4'>
           <AppInput
-            label='Config Name'
-            placeholder='My OpenAI Config'
-            value={form.values.name}
+            label='Tên cấu hình'
+            placeholder='VD: OpenAI production, Gemini backup...'
+            value={form.values.name ?? ''}
             onTextUpdate={(next) => void form.updateFieldValue('name', next, true)}
             isReadonly={isLoading}
             errorText={form.getFormErrorMessage('name')}
           />
 
           <div className='space-y-1.5'>
-            <Label>Provider Type</Label>
-            <Select 
-              value={form.values.providerType} 
-              onValueChange={(val: any) => void form.updateFieldValue('providerType', val, true)}
+            <Label>Loại provider</Label>
+            <Select
+              value={form.values.providerType}
+              onValueChange={(val: AIProviderConfig['providerType']) =>
+                void form.updateFieldValue('providerType', val, true)
+              }
               disabled={isLoading}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Select type" />
+                <SelectValue placeholder="Chọn loại" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="OPENAI">OpenAI</SelectItem>
@@ -101,7 +123,6 @@ const UpsertAIProviderDialog: React.FC<UpsertAIProviderDialogProps> = (props) =>
           <AppInput
             label='API Key'
             placeholder='sk-...'
-            type="password"
             value={form.values.apiKey}
             onTextUpdate={(next) => void form.updateFieldValue('apiKey', next, true)}
             isReadonly={isLoading}
@@ -110,7 +131,11 @@ const UpsertAIProviderDialog: React.FC<UpsertAIProviderDialogProps> = (props) =>
 
           <AppInput
             label='API URL'
-            placeholder='https://api.openai.com/v1'
+            placeholder={
+              providerType === 'OPENAI'
+                ? 'https://api.openai.com/v1'
+                : 'https://generativelanguage.googleapis.com'
+            }
             value={form.values.apiUrl}
             onTextUpdate={(next) => void form.updateFieldValue('apiUrl', next, true)}
             isReadonly={isLoading}
@@ -119,7 +144,7 @@ const UpsertAIProviderDialog: React.FC<UpsertAIProviderDialogProps> = (props) =>
 
           <AppInput
             label='Model'
-            placeholder='gpt-4o'
+            placeholder={providerType === 'OPENAI' ? 'gpt-4o' : 'gemini-1.5-pro'}
             value={form.values.model}
             onTextUpdate={(next) => void form.updateFieldValue('model', next, true)}
             isReadonly={isLoading}
@@ -129,23 +154,13 @@ const UpsertAIProviderDialog: React.FC<UpsertAIProviderDialogProps> = (props) =>
           <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border">
             <div className="space-y-0.5">
               <Label>Enabled</Label>
-              <p className="text-[11px] text-muted-foreground">Cho phép sử dụng provider này</p>
+              <p className="text-[11px] text-muted-foreground">
+                Bật để đưa cấu hình này vào hàng đợi round-robin
+              </p>
             </div>
             <Switch
               checked={form.values.enabled}
               onCheckedChange={(val) => void form.updateFieldValue('enabled', val, true)}
-              disabled={isLoading}
-            />
-          </div>
-
-          <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border">
-            <div className="space-y-0.5">
-              <Label>Set as Active</Label>
-              <p className="text-[11px] text-muted-foreground">Sử dụng làm provider mặc định cho hệ thống</p>
-            </div>
-            <Switch
-              checked={form.values.isActive}
-              onCheckedChange={(val) => void form.updateFieldValue('isActive', val, true)}
               disabled={isLoading}
             />
           </div>
@@ -161,7 +176,7 @@ const UpsertAIProviderDialog: React.FC<UpsertAIProviderDialogProps> = (props) =>
               disabled: isLoading,
             },
             {
-              title: isCreateNew ? 'Create' : 'Save',
+              title: isCreate ? 'Tạo' : 'Lưu',
               color: 'primary',
               actionCallback: () => void form.submitForm(),
               disabled: isLoading,

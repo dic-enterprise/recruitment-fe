@@ -13,6 +13,12 @@ import { useToast } from '@/shared/hooks/use-toast';
 import { BaseTable, type Column } from '@/shared/components/BaseTable';
 import type { Candidate, ExtractStatus, EmploymentTag } from '@/shared/types/api';
 
+function getCandidateListName(candidate: Candidate): string {
+  if (candidate.name?.trim()) return candidate.name.trim();
+  if (candidate.extractStatus === 'FAILED') return 'Fail';
+  return 'Processing...';
+}
+
 export default function CandidatesPage() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -76,11 +82,22 @@ export default function CandidatesPage() {
       header: 'Name',
       key: 'name',
       width: '250px',
-      render: (c) => (
-        <Link to={`/hr/candidates/${c.id}`} className='font-semibold text-primary hover:underline'>
-          {c.name || 'Processing...'}
-        </Link>
-      ),
+      render: (c) => {
+        const displayName = getCandidateListName(c);
+        const isExtractFailed = c.extractStatus === 'FAILED' && !c.name?.trim();
+        return (
+          <Link
+            to={`/hr/candidates/${c.id}`}
+            className={
+              isExtractFailed
+                ? 'font-semibold text-destructive hover:underline'
+                : 'font-semibold text-primary hover:underline'
+            }
+          >
+            {displayName}
+          </Link>
+        );
+      },
     },
     {
       header: 'Email',

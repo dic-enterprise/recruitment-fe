@@ -42,6 +42,8 @@ export interface Candidate {
   email: string;
   phone?: string;
   cvFileName: string;
+  /** Server-computed: true when CV can be opened inline in a browser tab. */
+  cvPreviewable?: boolean;
   extractStatus: ExtractStatus;
   employmentTag: EmploymentTag;
   extractError?: { code?: string; message: string; timestamp?: string };
@@ -98,13 +100,12 @@ export interface ApiErrorResponse {
 
 export interface AIProviderConfig {
   id?: number;
-  name: string;
+  name?: string;
   providerType: 'OPENAI' | 'GEMINI';
   enabled: boolean;
   apiKey: string;
   apiUrl: string;
   model: string;
-  isActive: boolean;
 }
 
 export type AIConfig = AIProviderConfig[];

@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Input } from '@/shared/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select';
@@ -63,14 +62,7 @@ export default function JobsPage() {
       header: 'Title',
       key: 'title',
       width: '350px',
-      render: (job) => (
-        <Link 
-          to={`/hr/jobs/${job.id}/matching`} 
-          className='font-semibold text-primary hover:underline'
-        >
-          {job.title}
-        </Link>
-      ),
+      render: (job) => <span className='font-semibold'>{job.title}</span>,
     },
     {
       header: 'Department',
