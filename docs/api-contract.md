@@ -91,23 +91,22 @@ All API responses are wrapped in a standard `CodeResponse` object.
   "cvPreviewable": "boolean",
   "extractStatus": "PENDING | SCANNING | COMPLETE | FAILED",
   "employmentTag": "CHUA_NHAN_VIEC | DA_CO_VIEC",
-  "extractError": {
-    "code": "string?",
-    "message": "string",
-    "timestamp": "ISO8601 string"
-  }?,
   "uploadedAt": "ISO8601 string",
   "skills": ["string"]?,
   "experience": "string?"
 }
 ```
 
-### ExtractError
+### ExtractErrorLog (from `queue_tasks`)
 ```json
 {
-  "code": "string",
-  "message": "string",
-  "timestamp": "ISO8601 string"
+  "taskId": "number",
+  "candidateId": "number",
+  "errorCode": "string?",
+  "errorMessage": "string?",
+  "retryCount": "number",
+  "maxRetries": "number",
+  "failedAt": "ISO8601 string?"
 }
 ```
 
@@ -120,14 +119,12 @@ All API responses are wrapped in a standard `CodeResponse` object.
   "jobId": "number",
   "jobTitle": "string",
   "score": "number",
-  "details": {
-    "skillMatch": "number",
-    "experienceMatch": "number",
-    "educationMatch": "number"
-  },
+  "pipelineStatus": "NONE | SHORTLISTED | CONTACTED | INTERVIEW_SCHEDULED | INTERVIEW_DONE",
   "createdAt": "ISO8601 string"
 }
 ```
+
+`pipelineStatus` defaults to `NONE` when a new match is created. HR advances candidates through the pipeline after review.
 
 ---
 
@@ -173,18 +170,20 @@ All API responses are wrapped in a standard `CodeResponse` object.
   - **Errors:** `404` candidate/CV not found. Do not use `401` for missing token (endpoint is public).
   - **CORS:** allow `GET` from the frontend origin (or serve API and SPA under the same site) so a new tab load succeeds.
   - **Example:** `GET /v1/candidates/6/cv/preview`
-- **GET /candidates/:id/cv/download** — **Protected API**
-  - **Authentication:** required — `Authorization: Bearer <token>`.
-  - **Authorization:** caller must have permission to access candidate CV (e.g. role `HR` or `ADMIN`). Return `401` if unauthenticated, `403` if authenticated but forbidden.
+- **GET /candidates/:id/cv/download** — **Protected API** *(auth tạm tắt trên BE; sẽ bật sau)*
+  - **Authentication (planned):** `Authorization: Bearer <token>`; roles `HR` / `ADMIN`.
+  - **Hiện tại:** public giống preview — không yêu cầu token.
   - **Purpose:** download CV for **any** stored file type (**not** wrapped in `CodeResponse`).
   - **Success (200):** raw file body.
     - `Content-Type`: correct MIME (or `application/octet-stream` if unknown).
     - `Content-Disposition: attachment; filename="<cvFileName>"`.
-  - **Errors:** `404` candidate/CV not found; `401` / `403` as above.
+  - **Errors:** `404` candidate/CV not found (`401` / `403` khi bật auth).
   - **Example:** `GET /v1/candidates/6/cv/download` with `Authorization: Bearer …`
 - **POST /candidates/upload**
-  - Multipart/form-data: `file` (PDF, DOC, DOCX, images, etc. per product policy).
-  - Returns `CodeResponse<Candidate>` with `cvPreviewable` computed from the uploaded filename/MIME.
+  - Multipart/form-data: `files` — one or more **PDF** files (same field name repeated, or array).
+  - Max **10MB** per file, **100MB** total request size.
+  - Returns `CodeResponse<List<Candidate>>` — one candidate record per file; each enqueues `EXTRACT_CV`.
+  - Errors: `400` if no files, empty files only, or any non-PDF.
 
 #### CV file preview rules (browser-inline)
 
@@ -218,18 +217,40 @@ The frontend treats a CV as previewable only when the browser can render it inli
 - **GET /matches/candidate/:candidateId**
   - Returns `CodeResponse<List<CVMatch>>`.
 - **GET /matches/queue**
-  - Returns `CodeResponse<List<MatchQueueItem>>`.
+  - Returns `CodeResponse<List<MatchQueueItem>>` — active tasks from `queue_tasks` (PENDING / PROCESSING).
   - Item detail:
     ```json
     {
+      "taskId": "number",
+      "taskType": "EXTRACT_CV | MATCH_JOB",
       "candidateId": "number",
+      "jobId": "number | null",
       "candidateName": "string",
-      "status": "queued | processing | done"
+      "status": "queued | processing | done",
+      "retryCount": "number",
+      "maxRetries": 3
     }
     ```
 - **POST /matches/trigger**
   - Body: `{ "jobId": "number", "candidateIds": ["number"] }`
-  - Returns `CodeResponse<Void>`.
+  - Enqueues `MATCH_JOB` tasks (async AI scoring). Returns `CodeResponse<Void>` immediately.
+
+#### `queue_tasks` locking (internal)
+
+- Worker claims tasks with PostgreSQL `FOR UPDATE SKIP LOCKED` → `PROCESSING` + `locked_at` / `locked_by`.
+- `locked_by`: worker id (`app.queue.worker-id` or `{hostname}-{uuid}`).
+- Stale lock: `PROCESSING` longer than `app.queue.lock-timeout-minutes` (default 15) → reset to `PENDING`.
+
+#### `queue_tasks.metadata` (JSONB, internal)
+
+Task payload is stored in `metadata` (not separate FK columns):
+
+| `taskType` | `metadata` example |
+|------------|-------------------|
+| `EXTRACT_CV` | `{ "candidateId": 6 }` |
+| `MATCH_JOB` | `{ "candidateId": 6, "jobId": 1 }` |
+
+API `GET /matches/queue` still exposes `candidateId` / `jobId` at top level (mapped from `metadata`).
 
 ### 5. Statistics (Dashboard)
 - **GET /stats/summary**
@@ -247,33 +268,9 @@ The frontend treats a CV as previewable only when the browser can render it inli
     }
     ```
 
-### 6. Interview schedules (Schedule)
-- **GET /schedules/interviews**
-  - Query Params: `from` (ISO8601, inclusive), `to` (ISO8601, exclusive or inclusive — document as inclusive range on backend).
-  - Returns `CodeResponse<List<InterviewSchedule>>` for calendar views (month / week / day).
-  - Used by HR page `/hr/schedule`.
-
-#### InterviewSchedule
-```json
-{
-  "id": 1,
-  "candidateId": 6,
-  "candidateName": "string",
-  "jobId": 2,
-  "jobTitle": "string",
-  "startAt": "ISO8601 string",
-  "endAt": "ISO8601 string",
-  "location": "string?",
-  "meetingLink": "string?",
-  "interviewer": "string?",
-  "status": "SCHEDULED | COMPLETED | CANCELLED",
-  "notes": "string?"
-}
-```
-
-### 7. Admin & System
+### 6. Admin & System
 - **GET /admin/extract-errors**
-  - Returns `CodeResponse<List<Candidate>>`.
+  - Returns `CodeResponse<List<ExtractErrorLog>>` — failed `EXTRACT_CV` tasks from `queue_tasks` (newest first).
 - **GET /admin/ai-config**
   - Returns `CodeResponse<List<AIProviderConfiguration>>`.
 - **PUT /admin/ai-config**

@@ -12,6 +12,7 @@ import { Button } from '@/shared/components/ui/button';
 import { useToast } from '@/shared/hooks/use-toast';
 import { BaseTable, type Column } from '@/shared/components/BaseTable';
 import type { Candidate, ExtractStatus, EmploymentTag } from '@/shared/types/api';
+import { validateCvUploadFiles } from '@/shared/lib/cv-upload-utils';
 
 function getCandidateListName(candidate: Candidate): string {
   if (candidate.name?.trim()) return candidate.name.trim();
@@ -37,23 +38,26 @@ export default function CandidatesPage() {
     }),
   });
 
-  const ALLOWED_TYPES = [
-    'application/pdf',
-  ];
-
   const uploadMutation = useMutation({
-    mutationFn: (file: File) => candidateService.uploadCV(file),
-    onSuccess: () => {
-      toast({ title: 'Thành công', description: 'CV đã được tải lên và đang được xử lý.' });
+    mutationFn: (files: File[]) => candidateService.uploadCVs(files),
+    onSuccess: (created) => {
+      const count = created.length;
+      toast({
+        title: 'Thành công',
+        description:
+          count === 1
+            ? 'CV đã được tải lên và đang được xử lý.'
+            : `Đã tải lên ${count} CV và đang được xử lý.`,
+      });
       queryClient.invalidateQueries({ queryKey: ['candidates'] });
     },
-    onError: (error: any) => {
-      toast({ 
-        title: 'Lỗi tải lên', 
-        description: error.response?.data?.message || 'Không thể tải lên CV lúc này.',
-        variant: 'destructive' 
+    onError: (error: Error) => {
+      toast({
+        title: 'Lỗi tải lên',
+        description: error.message || 'Không thể tải lên CV lúc này.',
+        variant: 'destructive',
       });
-    }
+    },
   });
 
   const handleUploadClick = () => {
@@ -61,20 +65,14 @@ export default function CandidatesPage() {
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (!ALLOWED_TYPES.includes(file.type)) {
-        toast({
-          title: 'Invalid file type',
-          description: 'Only PDF files are allowed.',
-          variant: 'destructive',
-        });
-        return;
-      }
-      uploadMutation.mutate(file);
-      // Reset input to allow uploading the same file again if needed
+    const validation = validateCvUploadFiles(e.target.files);
+    if (!validation.ok) {
+      toast({ title: 'Không thể upload', description: validation.message, variant: 'destructive' });
       if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
     }
+    uploadMutation.mutate(validation.files);
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const columns: Column<Candidate>[] = [
@@ -140,9 +138,10 @@ export default function CandidatesPage() {
               ref={fileInputRef}
               onChange={handleFileChange}
               className='hidden'
-              accept='.pdf'
+              accept='.pdf,application/pdf'
+              multiple
             />
-            <p className='text-xs text-muted-foreground hidden sm:block'>PDF only</p>
+            <p className='text-xs text-muted-foreground hidden sm:block'>PDF — tối đa 10MB/file, 100MB/lần</p>
             <Button onClick={handleUploadClick} disabled={uploadMutation.isPending}>
               {uploadMutation.isPending ? (
                 <Loader2 className='mr-2 h-4 w-4 animate-spin' />

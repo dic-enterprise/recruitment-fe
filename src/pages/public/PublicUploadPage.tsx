@@ -8,12 +8,7 @@ import { ExtractStatusBadge } from '@/shared/components/StatusBadges';
 import { candidateService } from '@/shared/lib/api-services';
 import { Upload, FileText, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import { useToast } from '@/shared/hooks/use-toast';
-import type { Candidate } from '@/shared/types/api';
-
-const ALLOWED_TYPES = [
-  'application/pdf',
-];
-const MAX_SIZE = 10 * 1024 * 1024; // 10MB
+import { validateCvUploadFiles } from '@/shared/lib/cv-upload-utils';
 
 export default function PublicUploadPage() {
   const { toast } = useToast();
@@ -23,9 +18,9 @@ export default function PublicUploadPage() {
   const [candidateId, setCandidateId] = useState<string | null>(null);
 
   const uploadMutation = useMutation({
-    mutationFn: (f: File) => candidateService.uploadCV(f),
+    mutationFn: (f: File) => candidateService.uploadCVs([f]).then((list) => list[0]),
     onSuccess: (data) => {
-      setCandidateId(data.id);
+      setCandidateId(String(data.id));
       toast({ title: 'CV Received', description: 'Your CV has been successfully uploaded.' });
     },
     onError: () => {
@@ -46,21 +41,12 @@ export default function PublicUploadPage() {
 
   const handleFileChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      const f = e.target.files?.[0];
-      if (!f) return;
-      if (!ALLOWED_TYPES.includes(f.type)) {
-        toast({
-          title: 'Invalid file type',
-          description: 'Only PDF files are allowed.',
-          variant: 'destructive',
-        });
+      const validation = validateCvUploadFiles(e.target.files);
+      if (!validation.ok) {
+        toast({ title: 'Invalid file', description: validation.message, variant: 'destructive' });
         return;
       }
-      if (f.size > MAX_SIZE) {
-        toast({ title: 'File too large', description: 'Maximum file size is 10 MB.', variant: 'destructive' });
-        return;
-      }
-      setFile(f);
+      setFile(validation.files[0]);
     },
     [toast],
   );

@@ -99,15 +99,17 @@ export const candidateService = {
       throw error;
     }
   },
-  uploadCV: async (file: File): Promise<Candidate> => {
+  uploadCVs: async (files: File[]): Promise<Candidate[]> => {
     try {
       const formData = new FormData();
-      formData.append('file', file);
+      for (const file of files) {
+        formData.append('files', file);
+      }
       return await apiClient.post('/candidates/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
     } catch (error) {
-      console.error('Failed to upload CV:', error);
+      console.error('Failed to upload CVs:', error);
       throw error;
     }
   },
