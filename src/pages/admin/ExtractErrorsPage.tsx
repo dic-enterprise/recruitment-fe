@@ -1,31 +1,14 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Button } from '@/shared/components/ui/button';
+import { useQuery } from '@tanstack/react-query';
 import { adminService } from '@/shared/lib/api-services';
 import { ExtractStatusBadge } from '@/shared/components/StatusBadges';
 import PageHeader from '@/shared/components/PageHeader';
 import { BaseTable, type Column } from '@/shared/components/BaseTable';
-import { RotateCcw, Loader2 } from 'lucide-react';
-import { useToast } from '@/shared/hooks/use-toast';
 import type { Candidate } from '@/shared/types/api';
 
 export default function ExtractErrorsPage() {
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-
   const { data: failedCandidates, isLoading } = useQuery({
     queryKey: ['extract-errors'],
     queryFn: adminService.getExtractErrors,
-  });
-
-  const retryMutation = useMutation({
-    mutationFn: adminService.retryExtract,
-    onSuccess: () => {
-      toast({ title: 'Retry queued', description: 'Extract retry has been successfully queued.' });
-      queryClient.invalidateQueries({ queryKey: ['extract-errors'] });
-    },
-    onError: () => {
-      toast({ title: 'Error', description: 'Failed to queue retry.', variant: 'destructive' });
-    },
   });
 
   const columns: Column<Candidate>[] = [
@@ -64,34 +47,13 @@ export default function ExtractErrorsPage() {
         </p>
       ),
     },
-    {
-      header: 'Action',
-      key: 'action',
-      className: 'text-right',
-      headerClassName: 'text-right',
-      render: (c) => (
-        <Button
-          variant='outline'
-          size='sm'
-          onClick={() => retryMutation.mutate(String(c.id))}
-          disabled={retryMutation.isPending}
-        >
-          {retryMutation.isPending ? (
-            <Loader2 className='mr-1 h-3 w-3 animate-spin' />
-          ) : (
-            <RotateCcw className='mr-1 h-3 w-3' />
-          )}
-          Retry
-        </Button>
-      ),
-    },
   ];
 
   return (
     <div className='flex h-full flex-col'>
-      <PageHeader 
-        title='Extract Errors' 
-        description='Candidates with failed CV extraction — Admin IT can retry' 
+      <PageHeader
+        title='Extract Errors'
+        description='Candidates with failed CV extraction'
       />
 
       <BaseTable

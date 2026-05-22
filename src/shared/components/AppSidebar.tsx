@@ -13,10 +13,10 @@ import {
 
 const hrLinks = [
   { to: '/hr/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { to: '/hr/schedule', label: 'Schedule', icon: CalendarDays },
   { to: '/hr/matches', label: 'Matching CV', icon: CheckSquare },
   { to: '/hr/candidates', label: 'Candidates', icon: Users },
   { to: '/hr/jobs', label: 'Jobs', icon: Briefcase },
-  { to: '/hr/schedule', label: 'Schedule', icon: CalendarDays },
   { to: '/hr/departments', label: 'Departments', icon: Building2 },
 ];
 
