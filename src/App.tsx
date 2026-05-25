@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider, QueryCache, MutationCache } from '@tanstack/react-query';
-import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, Route, Routes, Navigate } from 'react-router-dom';
 import { Toaster as Sonner, toast } from '@/shared/components/ui/sonner';
 import { Toaster } from '@/shared/components/ui/toaster';
 import { TooltipProvider } from '@/shared/components/ui/tooltip';
@@ -52,80 +52,22 @@ const App = () => (
           <Route path='/public/upload' element={<PublicUploadPage />} />
           <Route path='/public/cv/:candidateId/status' element={<PublicCVStatusPage />} />
           {/* HR routes */}
-          <Route
-            path='/hr/dashboard'
-            element={
-              <AppLayout>
-                <DashboardPage />
-              </AppLayout>
-            }
-          />
-          <Route
-            path='/hr/departments'
-            element={
-              <AppLayout>
-                <DepartmentsPage />
-              </AppLayout>
-            }
-          />
-          <Route
-            path='/hr/jobs'
-            element={
-              <AppLayout>
-                <JobsPage />
-              </AppLayout>
-            }
-          />
-          <Route
-            path='/hr/matches'
-            element={
-              <AppLayout>
-                <MatchResultsPage />
-              </AppLayout>
-            }
-          />
-          <Route
-            path='/hr/candidates'
-            element={
-              <AppLayout>
-                <CandidatesPage />
-              </AppLayout>
-            }
-          />
-          <Route
-            path='/hr/candidates/:candidateId'
-            element={
-              <AppLayout>
-                <CandidateDetailPage />
-              </AppLayout>
-            }
-          />
-          <Route
-            path='/hr/schedule'
-            element={
-              <AppLayout>
-                <SchedulePage />
-              </AppLayout>
-            }
-          />
-          {/* Admin routes */}
-          <Route
-            path='/admin/extract-errors'
-            element={
-              <AppLayout>
-                <ExtractErrorsPage />
-              </AppLayout>
-            }
-          />
-          <Route
-            path='/admin/ai-config'
-            element={
-              <AppLayout>
-                <AIConfigPage />
-              </AppLayout>
-            }
-          />
-          <Route path='*' element={<NotFound />} />
+          <Route element={<AppLayout />}>
+            {/* HR */}
+            <Route path='/hr/dashboard' element={<DashboardPage />} />
+            <Route path='/hr/departments' element={<DepartmentsPage />} />
+            <Route path='/hr/jobs' element={<JobsPage />} />
+            <Route path='/hr/matches' element={<MatchResultsPage />} />
+            <Route path='/hr/candidates' element={<CandidatesPage />} />
+            <Route path='/hr/candidates/:candidateId' element={<CandidateDetailPage />} />
+            <Route path='/hr/schedule' element={<SchedulePage />} />
+
+            {/* Admin */}
+            <Route path='/admin/extract-errors' element={<ExtractErrorsPage />} />
+            <Route path='/admin/ai-config' element={<AIConfigPage />} />
+          </Route>
+          {/* <Route path='*' element={<NotFound />} /> */}
+          <Route path='*' element={<Navigate to='/' replace />} />
         </Routes>
       </BrowserRouter>
     </TooltipProvider>

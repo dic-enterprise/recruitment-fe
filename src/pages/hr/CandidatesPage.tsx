@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Input } from '@/shared/components/ui/input';
@@ -13,6 +13,7 @@ import { useToast } from '@/shared/hooks/use-toast';
 import { BaseTable, type Column } from '@/shared/components/BaseTable';
 import type { Candidate, ExtractStatus, EmploymentTag } from '@/shared/types/api';
 import { validateCvUploadFiles } from '@/shared/lib/cv-upload-utils';
+import debounce from 'lodash/debounce';
 
 function getCandidateListName(candidate: Candidate): string {
   if (candidate.name?.trim()) return candidate.name.trim();
@@ -24,18 +25,20 @@ export default function CandidatesPage() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
+
   const [extractFilter, setExtractFilter] = useState<ExtractStatus | 'ALL'>('ALL');
   const [employmentFilter, setEmploymentFilter] = useState<EmploymentTag | 'ALL'>('ALL');
   const [keyword, setKeyword] = useState('');
+  const [debouncedKeyword, setDebouncedKeyword] = useState('');
 
   const { data: candidates, isLoading } = useQuery({
-    queryKey: ['candidates', extractFilter, employmentFilter, keyword],
-    queryFn: () => candidateService.getAll({
-      extractStatus: extractFilter === 'ALL' ? undefined : extractFilter,
-      employmentTag: employmentFilter === 'ALL' ? undefined : employmentFilter,
-      search: keyword || undefined,
-    }),
+    queryKey: ['candidates', extractFilter, employmentFilter, debouncedKeyword],
+    queryFn: () =>
+      candidateService.getAll({
+        extractStatus: extractFilter === 'ALL' ? undefined : extractFilter,
+        employmentTag: employmentFilter === 'ALL' ? undefined : employmentFilter,
+        search: debouncedKeyword || undefined,
+      }),
   });
 
   const uploadMutation = useMutation({
@@ -45,9 +48,7 @@ export default function CandidatesPage() {
       toast({
         title: 'Thành công',
         description:
-          count === 1
-            ? 'CV đã được tải lên và đang được xử lý.'
-            : `Đã tải lên ${count} CV và đang được xử lý.`,
+          count === 1 ? 'CV đã được tải lên và đang được xử lý.' : `Đã tải lên ${count} CV và đang được xử lý.`,
       });
       queryClient.invalidateQueries({ queryKey: ['candidates'] });
     },
@@ -66,7 +67,7 @@ export default function CandidatesPage() {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const validation = validateCvUploadFiles(e.target.files);
-    if (!validation.ok) {
+    if (validation.ok === false) {
       toast({ title: 'Không thể upload', description: validation.message, variant: 'destructive' });
       if (fileInputRef.current) fileInputRef.current.value = '';
       return;
@@ -74,6 +75,20 @@ export default function CandidatesPage() {
     uploadMutation.mutate(validation.files);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
+
+  const debouncedSetKeyword = useMemo(
+    () =>
+      debounce((value: string) => {
+        setDebouncedKeyword(value);
+      }, 500),
+    [],
+  );
+
+  useEffect(() => {
+    return () => {
+      debouncedSetKeyword.cancel();
+    };
+  }, [debouncedSetKeyword]);
 
   const columns: Column<Candidate>[] = [
     {
@@ -128,9 +143,9 @@ export default function CandidatesPage() {
 
   return (
     <div className='flex h-full flex-col'>
-      <PageHeader 
-        title='Candidates' 
-        description='View all candidates and their CV extract status' 
+      <PageHeader
+        title='Candidates'
+        description='View all candidates and their CV extract status'
         actions={
           <div className='flex items-center gap-2'>
             <input
@@ -142,7 +157,7 @@ export default function CandidatesPage() {
               multiple
             />
             <p className='text-xs text-muted-foreground hidden sm:block'>PDF — tối đa 10MB/file, 100MB/lần</p>
-            <Button onClick={handleUploadClick} disabled={uploadMutation.isPending}>
+            <Button onClick={handleUploadClick} disabled={uploadMutation.isPending} className='h-8'>
               {uploadMutation.isPending ? (
                 <Loader2 className='mr-2 h-4 w-4 animate-spin' />
               ) : (
@@ -160,7 +175,11 @@ export default function CandidatesPage() {
           <Input
             placeholder='Search name or email...'
             value={keyword}
-            onChange={(e) => setKeyword(e.target.value)}
+            onChange={(e) => {
+              const value = e.target.value;
+              setKeyword(value);
+              debouncedSetKeyword(value);
+            }}
             className='pl-9'
           />
         </div>

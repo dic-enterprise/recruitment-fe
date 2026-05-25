@@ -118,7 +118,7 @@ export default function JobsPage() {
           title='Jobs'
           description='Manage job postings'
           actions={
-            <Button onClick={openCreateJob}>
+            <Button onClick={openCreateJob} className='h-8'>
               <Plus className='mr-2 h-4 w-4' />
               Create job
             </Button>

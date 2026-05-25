@@ -48,9 +48,10 @@ export type BaseActionItem = {
   disabled?: boolean;
 };
 
-function actionColorToVariant(color?: string): ButtonProps['variant'] {
+function actionColorToVariant(color?: string): ButtonProps['variant'] | 'danger-outline' {
   if (!color || color === 'primary' || color === 'default') return 'default';
   if (color === 'destructive' || color === 'danger') return 'destructive';
+  if (color === 'danger-outline') return 'danger-outline';
   if (color === 'secondary') return 'secondary';
   if (color === 'outline') return 'outline';
   if (color === 'ghost') return 'ghost';

@@ -185,7 +185,7 @@ const UpsertDepartmentDialog: React.FC<UpsertDepartmentDialogProps> = (props) =>
           actions={[
             {
               title: 'Cancel',
-              color: 'outline',
+              color: 'danger-outline',
               actionCallback: () => onClose(undefined),
               disabled: isLoading,
             },

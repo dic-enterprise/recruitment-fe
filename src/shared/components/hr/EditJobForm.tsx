@@ -188,7 +188,7 @@ function valuesToJob(values: JobFormValues, initialJob: Job | null, departments:
     highMatchCount: existing ? existing.highMatchCount : 0,
     location: existing?.location, // Preserve
     workplaceHybrid: existing?.workplaceHybrid,
-    employmentFullTime: existing?.employmentFulltime,
+    employmentFullTime: existing?.employmentFullTime,
     recruitmentUrgency: values.recruitmentUrgency,
     skills: [], // Reset skills as they are now integrated in requirements
     minMatchingScore: values.minMatchingScore,
@@ -380,7 +380,7 @@ export function EditJobForm({
               </div>
             )}
 
-            <div className='space-y-1.5 sm:col-span-3 lg:col-span-1'>
+            <div className='space-y-1.5 sm:col-span-3 lg:col-span-2'>
               <Label className='text-xs font-medium text-muted-foreground'>Mức độ ưu tiên</Label>
               <Select
                 value={values.recruitmentUrgency}
@@ -492,7 +492,7 @@ export function EditJobForm({
       )}
       <div className='flex items-center gap-3'>
         {onCancel && !isEdit && (
-          <Button type='button' variant='ghost' className='h-10 px-6 text-sm font-medium' onClick={onCancel}>Hủy</Button>
+          <Button type='button' variant='danger-outline' className='h-10 px-6 text-sm font-medium' onClick={onCancel}>Hủy</Button>
         )}
         <Button
           type='button'

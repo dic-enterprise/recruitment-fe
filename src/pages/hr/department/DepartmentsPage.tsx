@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { departmentService } from '@/shared/lib/api-services.ts';
 import PageHeader from '@/shared/components/PageHeader.tsx';
-import { Building2, Mail, Phone, Plus, User, Pencil } from 'lucide-react';
+import { Building2, Mail, Phone, Plus, User, Pencil, Edit } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button.tsx';
 import { BaseTable, type Column } from '@/shared/components/BaseTable.tsx';
 import useModal from '@/shared/hooks/useModal.ts';
@@ -67,7 +67,7 @@ export default function DepartmentsPage() {
     {
       header: 'Manager',
       key: 'manager',
-      render: (dept) => (
+      render: (dept) =>
         dept.manager ? (
           <div className='flex items-center gap-2'>
             <User className='h-3.5 w-3.5 text-muted-foreground' />
@@ -75,8 +75,7 @@ export default function DepartmentsPage() {
           </div>
         ) : (
           <span className='text-muted-foreground italic text-xs'>Not assigned</span>
-        )
-      ),
+        ),
     },
     {
       header: 'Jobs',
@@ -84,15 +83,13 @@ export default function DepartmentsPage() {
       className: 'text-center',
       headerClassName: 'text-center',
       render: (dept) => (
-        <span className={dept.jobCount > 0 ? 'font-medium' : 'text-muted-foreground'}>
-          {dept.jobCount}
-        </span>
+        <span className={dept.jobCount > 0 ? 'font-medium' : 'text-muted-foreground'}>{dept.jobCount}</span>
       ),
     },
     {
       header: 'Primary Contact',
       key: 'contact',
-      render: (dept) => (
+      render: (dept) =>
         dept.contacts[0] ? (
           <div className='flex flex-col text-xs space-y-0.5'>
             <div className='flex items-center gap-1.5'>
@@ -108,17 +105,16 @@ export default function DepartmentsPage() {
           </div>
         ) : (
           <span className='text-muted-foreground italic text-xs'>No contact</span>
-        )
-      ),
+        ),
     },
     {
       header: 'Actions',
       key: 'actions',
-      className: 'text-right',
-      headerClassName: 'text-right',
+      width: '100px',
       render: (dept) => (
-        <Button variant='ghost' size='sm' onClick={() => openEditDepartment(dept)}>
-          <Pencil className='h-4 w-4' />
+        <Button variant='outline' size='sm' onClick={() => openEditDepartment(dept)}>
+          <Edit className='mr-1.5 h-3.5 w-3.5' />
+          Edit
         </Button>
       ),
     },
@@ -131,13 +127,13 @@ export default function DepartmentsPage() {
           title='Departments'
           description='Manage company departments and their primary contacts'
           actions={
-            <Button onClick={openCreateDepartment}>
+            <Button onClick={openCreateDepartment} className='h-8'>
               <Plus className='mr-2 h-4 w-4' />
-              Create Department
+              New Department
             </Button>
           }
         />
-        
+
         <BaseTable
           data={departmentList}
           columns={columns}

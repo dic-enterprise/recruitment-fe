@@ -87,7 +87,7 @@ const UpsertAIProviderDialog: React.FC<UpsertAIProviderDialogProps> = (props) =>
       header={
         <BaseHeader
           title={isCreate ? 'Thêm cấu hình AI' : 'Chỉnh sửa cấu hình AI'}
-          description="Lưu toàn bộ danh sách cấu hình lên server (PUT /admin/ai-config)."
+          description='Lưu toàn bộ danh sách cấu hình lên server (PUT /admin/ai-config).'
         />
       }
       body={
@@ -111,11 +111,11 @@ const UpsertAIProviderDialog: React.FC<UpsertAIProviderDialogProps> = (props) =>
               disabled={isLoading}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Chọn loại" />
+                <SelectValue placeholder='Chọn loại' />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="OPENAI">OpenAI</SelectItem>
-                <SelectItem value="GEMINI">Google Gemini</SelectItem>
+                <SelectItem value='OPENAI'>OpenAI</SelectItem>
+                <SelectItem value='GEMINI'>Google Gemini</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -132,9 +132,7 @@ const UpsertAIProviderDialog: React.FC<UpsertAIProviderDialogProps> = (props) =>
           <AppInput
             label='API URL'
             placeholder={
-              providerType === 'OPENAI'
-                ? 'https://api.openai.com/v1'
-                : 'https://generativelanguage.googleapis.com'
+              providerType === 'OPENAI' ? 'https://api.openai.com/v1' : 'https://generativelanguage.googleapis.com'
             }
             value={form.values.apiUrl}
             onTextUpdate={(next) => void form.updateFieldValue('apiUrl', next, true)}
@@ -151,12 +149,10 @@ const UpsertAIProviderDialog: React.FC<UpsertAIProviderDialogProps> = (props) =>
             errorText={form.getFormErrorMessage('model')}
           />
 
-          <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border">
-            <div className="space-y-0.5">
+          <div className='flex items-center justify-between p-3 bg-muted/50 rounded-lg border'>
+            <div className='space-y-0.5'>
               <Label>Enabled</Label>
-              <p className="text-[11px] text-muted-foreground">
-                Bật để đưa cấu hình này vào hàng đợi round-robin
-              </p>
+              <p className='text-[11px] text-muted-foreground'>Bật để đưa cấu hình này vào hàng đợi round-robin</p>
             </div>
             <Switch
               checked={form.values.enabled}
@@ -171,7 +167,7 @@ const UpsertAIProviderDialog: React.FC<UpsertAIProviderDialogProps> = (props) =>
           actions={[
             {
               title: 'Cancel',
-              color: 'outline',
+              color: 'danger-outline',
               actionCallback: () => onClose(undefined),
               disabled: isLoading,
             },

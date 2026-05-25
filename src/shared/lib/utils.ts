@@ -27,11 +27,13 @@ export function formatDateTime(dateString: string | undefined): string {
     const year = date.getFullYear();
 
     let hours = date.getHours();
+    const minutes = date.getMinutes();
     const ampm = hours >= 12 ? 'PM' : 'AM';
     hours = hours % 12;
     hours = hours ? hours : 12; // the hour '0' should be '12'
+    const paddedMinutes = String(minutes).padStart(2, '0');
 
-    return `${day}/${month}/${year} ${hours}${ampm}`;
+    return `${day}/${month}/${year} ${hours}:${paddedMinutes} ${ampm}`;
   } catch (e) {
     return dateString;
   }

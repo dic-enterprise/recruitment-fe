@@ -4,7 +4,7 @@ import PageHeader from '@/shared/components/PageHeader';
 import { Button } from '@/shared/components/ui/button';
 import { BaseTable, type Column } from '@/shared/components/BaseTable';
 import { Badge } from '@/shared/components/ui/badge';
-import { Pencil, Cpu, Globe, Plus } from 'lucide-react';
+import { Pencil, Cpu, Globe, Plus, Edit } from 'lucide-react';
 import useModal from '@/shared/hooks/useModal';
 import UpsertAIProviderDialog from './comps/UpsertAIProviderDialog';
 import type { AIProviderConfig } from '@/shared/types/api';
@@ -53,9 +53,9 @@ export default function AIConfigPage() {
       header: 'Name',
       key: 'name',
       render: (item) => (
-        <div className="flex flex-col">
-          <span className="font-semibold">{displayName(item)}</span>
-          <span className="text-[10px] text-muted-foreground font-mono">{item.model || '—'}</span>
+        <div className='flex flex-col'>
+          <span className='font-semibold'>{displayName(item)}</span>
+          <span className='text-[10px] text-muted-foreground font-mono'>{item.model || '—'}</span>
         </div>
       ),
     },
@@ -63,8 +63,8 @@ export default function AIConfigPage() {
       header: 'Type',
       key: 'providerType',
       render: (item) => (
-        <Badge variant="outline" className="gap-1 px-1.5 py-0">
-          {item.providerType === 'OPENAI' ? <Cpu className="h-3 w-3" /> : <Globe className="h-3 w-3" />}
+        <Badge variant='outline' className='gap-1 px-1.5 py-0'>
+          {item.providerType === 'OPENAI' ? <Cpu className='h-3 w-3' /> : <Globe className='h-3 w-3' />}
           {item.providerType}
         </Badge>
       ),
@@ -85,32 +85,34 @@ export default function AIConfigPage() {
       key: 'enabled',
       render: (item) =>
         item.enabled ? (
-          <Badge className="bg-success/10 text-success border-success/20 hover:bg-success/20">Enabled</Badge>
+          <Badge className='bg-success/10 text-success border-success/20 hover:bg-success/20'>Enabled</Badge>
         ) : (
-          <Badge variant="secondary" className="opacity-50">Disabled</Badge>
+          <Badge variant='secondary' className='opacity-50'>
+            Disabled
+          </Badge>
         ),
     },
     {
       header: 'Actions',
       key: 'actions',
-      className: 'text-right',
-      headerClassName: 'text-right',
+      width: '100px',
       render: (item) => (
-        <Button variant="ghost" size="sm" onClick={() => openUpsertDialog(item)}>
-          <Pencil className="h-4 w-4" />
+        <Button variant='outline' size='sm' onClick={() => openUpsertDialog(item)}>
+          <Edit className='mr-1.5 h-3.5 w-3.5' />
+          Edit
         </Button>
       ),
     },
   ];
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
+    <div className=''>
       <PageHeader
-        title="AI Configuration"
-        description="Thêm và quản lý nhiều cấu hình AI. Các bản ghi được bật sẽ được dùng luân phiên (round-robin); lỗi hoặc timeout sẽ chuyển sang cấu hình tiếp theo."
+        title='AI Configuration'
+        description='Thêm và quản lý nhiều cấu hình AI. Các bản ghi được bật sẽ được dùng luân phiên (round-robin); lỗi hoặc timeout sẽ chuyển sang cấu hình tiếp theo.'
         actions={
-          <Button onClick={() => openUpsertDialog()} className="gap-2">
-            <Plus className="h-4 w-4" />
+          <Button onClick={() => openUpsertDialog()} className='gap-2 h-8'>
+            <Plus className='h-4 w-4' />
             Thêm cấu hình
           </Button>
         }
@@ -120,7 +122,7 @@ export default function AIConfigPage() {
         data={configs}
         columns={columns}
         isLoading={isLoading}
-        emptyMessage="Chưa có cấu hình AI. Nhấn «Thêm cấu hình» để tạo mới."
+        emptyMessage='Chưa có cấu hình AI. Nhấn «Thêm cấu hình» để tạo mới.'
         showIndex={true}
       />
       {modalNode}

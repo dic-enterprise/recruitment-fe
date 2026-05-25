@@ -37,7 +37,7 @@ export const departmentService = {
       throw error;
     }
   },
-  update: async (id: string, data: Partial<Department>): Promise<Department> => {
+  update: async (id: number, data: Partial<Department>): Promise<Department> => {
     try {
       return await apiClient.put(`/departments/${id}`, data);
     } catch (error) {

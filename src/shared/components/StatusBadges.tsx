@@ -28,22 +28,22 @@ const queueStatusConfig: Record<MatchQueueStatus, { label: string; className: st
 
 export function JobStatusBadge({ status }: { status: JobStatus }) {
   const config = jobStatusConfig[status];
-  return <Badge className={cn('border-0', config.className)}>{config.label}</Badge>;
+  return <Badge className={cn('border-0', config?.className)}>{config?.label}</Badge>;
 }
 
 export function ExtractStatusBadge({ status }: { status: ExtractStatus }) {
   const config = extractStatusConfig[status];
-  return <Badge className={cn('border-0', config.className)}>{config.label}</Badge>;
+  return <Badge className={cn('border-0', config?.className)}>{config?.label}</Badge>;
 }
 
 export function EmploymentBadge({ tag }: { tag: EmploymentTag }) {
   const config = employmentTagConfig[tag];
-  return <Badge className={cn('border-0', config.className)}>{config.label}</Badge>;
+  return <Badge className={cn('border-0', config?.className)}>{config?.label}</Badge>;
 }
 
 export function QueueStatusBadge({ status }: { status: MatchQueueStatus }) {
   const config = queueStatusConfig[status];
-  return <Badge className={cn('border-0', config.className)}>{config.label}</Badge>;
+  return <Badge className={cn('border-0', config?.className)}>{config?.label}</Badge>;
 }
 
 export function ScoreBadge({ score }: { score: number }) {
