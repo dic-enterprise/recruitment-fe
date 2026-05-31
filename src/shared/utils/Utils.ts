@@ -2,6 +2,7 @@ import React from 'react';
 import { FormikErrors } from 'formik/dist/types';
 import { Nullable } from '@/shared/utils/AppData.ts';
 import validator from 'validator';
+import i18n from '@/shared/i18n';
 
 export const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -58,11 +59,11 @@ export class AppValidation {
 
   static notEmpty: Validator<string> = (input) => {
     if (!input) {
-      return [false, 'Required'];
+      return [false, i18n.t('validation.required')];
     }
 
     if (!input.trim()) {
-      return [false, 'Required'];
+      return [false, i18n.t('validation.required')];
     }
 
     return [true, ''];
@@ -70,11 +71,11 @@ export class AppValidation {
 
   static moreThan8Char: Validator<string> = (input) => {
     if (!input) {
-      return [false, 'Required'];
+      return [false, i18n.t('validation.required')];
     }
 
     if (input.length < 8) {
-      return [false, 'Must more than 8 characters'];
+      return [false, i18n.t('validation.min8Chars')];
     }
 
     return [true, ''];
@@ -82,11 +83,11 @@ export class AppValidation {
 
   static arrayMoreThan3 = function <DataType>(input: Nullable<DataType[]>): ReturnType<Validator<DataType>> {
     if (!input) {
-      return [false, 'Required'];
+      return [false, i18n.t('validation.required')];
     }
 
     if (input.length < 3) {
-      return [false, 'Must more than 3'];
+      return [false, i18n.t('validation.min3Items')];
     }
 
     return [true, ''];
@@ -94,11 +95,11 @@ export class AppValidation {
 
   static isEmail: Validator<string> = (input) => {
     if (!input) {
-      return [false, 'Required'];
+      return [false, i18n.t('validation.required')];
     }
 
     if (!validator.isEmail(input)) {
-      return [false, 'Email is not right format'];
+      return [false, i18n.t('validation.invalidEmail')];
     }
 
     return [true, ''];
@@ -106,11 +107,11 @@ export class AppValidation {
 
   static isPhoneNumber: Validator<string> = (input) => {
     if (!input) {
-      return [false, 'Required'];
+      return [false, i18n.t('validation.required')];
     }
 
     if (!validator.isMobilePhone(input)) {
-      return [false, 'Phone is not right format'];
+      return [false, i18n.t('validation.invalidPhone')];
     }
 
     return [true, ''];
@@ -118,11 +119,11 @@ export class AppValidation {
 
   static arrayNotEmpty = function <DataType>(input: Nullable<DataType[]>): ReturnType<Validator<DataType>> {
     if (!input) {
-      return [false, 'Required'];
+      return [false, i18n.t('validation.required')];
     }
 
     if (input.length === 0) {
-      return [false, 'Required'];
+      return [false, i18n.t('validation.required')];
     }
 
     return [true, ''];

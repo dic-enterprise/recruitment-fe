@@ -1,14 +1,8 @@
 import { Navigate, type ToolbarProps, type View } from 'react-big-calendar';
+import { useTranslation } from 'react-i18next';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
 import { cn } from '@/shared/lib/utils';
-
-const VIEW_LABELS: Record<string, string> = {
-  month: 'Tháng',
-  week: 'Tuần',
-  day: 'Ngày',
-  agenda: 'Danh sách',
-};
 
 export default function ScheduleCalendarToolbar({
   label,
@@ -17,7 +11,15 @@ export default function ScheduleCalendarToolbar({
   view,
   views,
 }: ToolbarProps) {
+  const { t } = useTranslation();
   const viewList = (views as View[]) ?? [];
+
+  const viewLabels: Record<string, string> = {
+    month: t('schedule.month'),
+    week: t('schedule.week'),
+    day: t('schedule.day'),
+    agenda: t('schedule.agenda'),
+  };
 
   return (
     <div className='rbc-toolbar mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
@@ -34,7 +36,7 @@ export default function ScheduleCalendarToolbar({
             )}
             onClick={() => onView(name)}
           >
-            {VIEW_LABELS[name] ?? name}
+            {viewLabels[name] ?? name}
           </button>
         ))}
         <button
@@ -42,7 +44,7 @@ export default function ScheduleCalendarToolbar({
           className='rounded-md border border-border bg-background px-3 py-1.5 text-sm font-medium hover:bg-muted'
           onClick={() => onNavigate(Navigate.TODAY)}
         >
-          Hôm nay
+          {t('schedule.today')}
         </button>
       </div>
 
@@ -51,7 +53,7 @@ export default function ScheduleCalendarToolbar({
           type='button'
           variant='outline'
           size='icon'
-          aria-label='Trước'
+          aria-label={t('schedule.previous')}
           onClick={() => onNavigate(Navigate.PREVIOUS)}
         >
           <ChevronLeft className='h-4 w-4' />
@@ -63,7 +65,7 @@ export default function ScheduleCalendarToolbar({
           type='button'
           variant='outline'
           size='icon'
-          aria-label='Sau'
+          aria-label={t('schedule.next')}
           onClick={() => onNavigate(Navigate.NEXT)}
         >
           <ChevronRight className='h-4 w-4' />

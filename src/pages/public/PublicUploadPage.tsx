@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
@@ -11,6 +12,7 @@ import { useToast } from '@/shared/hooks/use-toast';
 import { validateCvUploadFiles } from '@/shared/lib/cv-upload-utils';
 
 export default function PublicUploadPage() {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const [file, setFile] = useState<File | null>(null);
   const [name, setName] = useState('');
@@ -18,13 +20,13 @@ export default function PublicUploadPage() {
   const [candidateId, setCandidateId] = useState<string | null>(null);
 
   const uploadMutation = useMutation({
-    mutationFn: (f: File) => candidateService.uploadCVs([f]).then((list) => list[0]),
+    mutationFn: (f: File) => candidateService.uploadCVs([f]).then((res) => res.candidates[0]),
     onSuccess: (data) => {
       setCandidateId(String(data.id));
-      toast({ title: 'CV Received', description: 'Your CV has been successfully uploaded.' });
+      toast({ title: t('public.cvReceived'), description: t('public.uploadSuccess') });
     },
     onError: () => {
-      toast({ title: 'Lỗi', description: 'Không thể tải lên CV. Vui lòng thử lại.', variant: 'destructive' });
+      toast({ title: t('common.error'), description: t('public.uploadError'), variant: 'destructive' });
     },
   });
 
@@ -43,20 +45,20 @@ export default function PublicUploadPage() {
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const validation = validateCvUploadFiles(e.target.files);
       if (!validation.ok) {
-        toast({ title: 'Invalid file', description: validation.message, variant: 'destructive' });
+        toast({ title: t('public.invalidFile'), description: validation.message, variant: 'destructive' });
         return;
       }
       setFile(validation.files[0]);
     },
-    [toast],
+    [toast, t],
   );
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!file || !name.trim() || !email.trim()) {
       toast({
-        title: 'Missing fields',
-        description: 'Please fill in all fields and select a CV file.',
+        title: t('public.missingFields'),
+        description: t('public.fillAllFields'),
         variant: 'destructive',
       });
       return;
@@ -77,27 +79,27 @@ export default function PublicUploadPage() {
             ) : (
               <Loader2 className='mx-auto h-12 w-12 text-primary animate-spin' />
             )}
-            <CardTitle className='mt-4'>CV Processing</CardTitle>
+            <CardTitle className='mt-4'>{t('public.cvProcessing')}</CardTitle>
           </CardHeader>
           <CardContent className='text-center space-y-4'>
             <p className='text-sm text-muted-foreground'>
-              Thank you, <strong>{name}</strong>. Your CV is being processed.
+              {t('public.thankYou', { name })}
             </p>
             <div className='flex items-center justify-center gap-2'>
-              <span className='text-sm text-muted-foreground'>Status:</span>
+              <span className='text-sm text-muted-foreground'>{t('public.statusLabel')}</span>
               <ExtractStatusBadge status={status} />
             </div>
             {status === 'FAILED' && (
               <p className='text-sm text-destructive'>
-                {candidate?.extractError?.message || 'There was an error processing your CV. Our team has been notified.'}
+                {candidate?.extractError?.message || t('common.serverError')}
               </p>
             )}
             {(status === 'PENDING' || status === 'SCANNING') && (
-              <p className='text-xs text-muted-foreground'>This page updates automatically...</p>
+              <p className='text-xs text-muted-foreground'>{t('public.autoUpdate')}</p>
             )}
             {status === 'COMPLETE' && (
               <p className='text-sm text-success font-medium'>
-                Extraction complete! We will review your profile shortly.
+                {t('public.uploadSuccess')}
               </p>
             )}
           </CardContent>
@@ -111,36 +113,36 @@ export default function PublicUploadPage() {
       <Card className='w-full max-w-md animate-slide-up'>
         <CardHeader className='text-center'>
           <Upload className='mx-auto h-10 w-10 text-primary' />
-          <CardTitle className='mt-2'>Submit Your CV</CardTitle>
-          <p className='text-sm text-muted-foreground'>Upload your resume to apply for open positions</p>
+          <CardTitle className='mt-2'>{t('public.submitCv')}</CardTitle>
+          <p className='text-sm text-muted-foreground'>{t('public.submitDescription')}</p>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className='space-y-4'>
             <div>
-              <Label htmlFor='name'>Full Name</Label>
+              <Label htmlFor='name'>{t('public.fullName')}</Label>
               <Input
                 id='name'
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder='Nguyễn Văn A'
+                placeholder={t('public.namePlaceholder')}
                 required
               />
             </div>
             <div>
-              <Label htmlFor='email'>Email</Label>
+              <Label htmlFor='email'>{t('public.email')}</Label>
               <Input
                 id='email'
                 type='email'
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder='you@email.com'
+                placeholder={t('public.emailPlaceholder')}
                 required
               />
             </div>
             <div>
-              <Label htmlFor='cv'>CV File</Label>
+              <Label htmlFor='cv'>{t('public.cvFile')}</Label>
               <Input id='cv' type='file' accept='.pdf' onChange={handleFileChange} required />
-              <p className='mt-1 text-xs text-muted-foreground'>PDF only — Max 10 MB</p>
+              <p className='mt-1 text-xs text-muted-foreground'>{t('public.pdfHelp')}</p>
             </div>
             {file && (
               <div className='flex items-center gap-2 rounded-md bg-muted p-2 text-sm'>
@@ -153,12 +155,12 @@ export default function PublicUploadPage() {
               {uploadMutation.isPending ? (
                 <>
                   <Loader2 className='mr-2 h-4 w-4 animate-spin' />
-                  Uploading...
+                  {t('public.uploading')}
                 </>
               ) : (
                 <>
                   <Upload className='mr-2 h-4 w-4' />
-                  Submit CV
+                  {t('public.submitButton')}
                 </>
               )}
             </Button>

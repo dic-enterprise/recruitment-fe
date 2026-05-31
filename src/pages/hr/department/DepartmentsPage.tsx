@@ -1,8 +1,9 @@
 import { Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { departmentService } from '@/shared/lib/api-services.ts';
 import PageHeader from '@/shared/components/PageHeader.tsx';
-import { Building2, Mail, Phone, Plus, User, Pencil, Edit } from 'lucide-react';
+import { Building2, Mail, Phone, Plus, User, Edit } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button.tsx';
 import { BaseTable, type Column } from '@/shared/components/BaseTable.tsx';
 import useModal from '@/shared/hooks/useModal.ts';
@@ -11,6 +12,7 @@ import type { Department } from '@/shared/types/api.ts';
 import React from 'react';
 
 export default function DepartmentsPage() {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [modalNode, openModal] = useModal();
 
@@ -45,7 +47,7 @@ export default function DepartmentsPage() {
 
   const columns: Column<Department>[] = [
     {
-      header: 'Department Name',
+      header: t('departments.name'),
       key: 'name',
       width: '300px',
       render: (dept) => (
@@ -56,7 +58,7 @@ export default function DepartmentsPage() {
       ),
     },
     {
-      header: 'Code',
+      header: t('departments.code'),
       key: 'code',
       render: (dept) => (
         <span className='rounded-md bg-secondary px-2 py-0.5 text-xs font-mono font-medium text-secondary-foreground border'>
@@ -65,7 +67,7 @@ export default function DepartmentsPage() {
       ),
     },
     {
-      header: 'Manager',
+      header: t('departments.manager'),
       key: 'manager',
       render: (dept) =>
         dept.manager ? (
@@ -74,20 +76,11 @@ export default function DepartmentsPage() {
             <span>{dept.manager}</span>
           </div>
         ) : (
-          <span className='text-muted-foreground italic text-xs'>Not assigned</span>
+          <span className='text-muted-foreground italic text-xs'>{t('common.notAssigned')}</span>
         ),
     },
     {
-      header: 'Jobs',
-      key: 'jobCount',
-      className: 'text-center',
-      headerClassName: 'text-center',
-      render: (dept) => (
-        <span className={dept.jobCount > 0 ? 'font-medium' : 'text-muted-foreground'}>{dept.jobCount}</span>
-      ),
-    },
-    {
-      header: 'Primary Contact',
+      header: t('departments.primaryContact'),
       key: 'contact',
       render: (dept) =>
         dept.contacts[0] ? (
@@ -104,17 +97,17 @@ export default function DepartmentsPage() {
             )}
           </div>
         ) : (
-          <span className='text-muted-foreground italic text-xs'>No contact</span>
+          <span className='text-muted-foreground italic text-xs'>{t('common.noContact')}</span>
         ),
     },
     {
-      header: 'Actions',
+      header: t('common.actions'),
       key: 'actions',
       width: '100px',
       render: (dept) => (
         <Button variant='outline' size='sm' onClick={() => openEditDepartment(dept)}>
           <Edit className='mr-1.5 h-3.5 w-3.5' />
-          Edit
+          {t('common.edit')}
         </Button>
       ),
     },
@@ -124,12 +117,12 @@ export default function DepartmentsPage() {
     <React.Fragment>
       <div className='flex h-full flex-col'>
         <PageHeader
-          title='Departments'
-          description='Manage company departments and their primary contacts'
+          title={t('departments.title')}
+          description={t('departments.description')}
           actions={
             <Button onClick={openCreateDepartment} className='h-8'>
               <Plus className='mr-2 h-4 w-4' />
-              New Department
+              {t('departments.newDepartment')}
             </Button>
           }
         />

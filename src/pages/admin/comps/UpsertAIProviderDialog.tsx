@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import type { AIProviderConfig } from '@/shared/types/api.ts';
 import { BaseAction, BaseDialog, BaseHeader } from '@/shared/components/dialog';
 import { useMutation } from '@tanstack/react-query';
@@ -46,18 +47,19 @@ function buildNextList(
 }
 
 const UpsertAIProviderDialog: React.FC<UpsertAIProviderDialogProps> = (props) => {
+  const { t } = useTranslation();
   const { provider, allConfigs, onSubmit, onClose } = props;
   const isCreate = provider == null;
 
   const mutation = useMutation({
     mutationFn: (payload: AIProviderConfig) => adminService.saveAIConfig(buildNextList(allConfigs, payload, isCreate)),
     onSuccess: () => {
-      toast.success(isCreate ? 'Tạo cấu hình AI thành công' : 'Cập nhật cấu hình AI thành công');
+      toast.success(isCreate ? t('admin.aiCreated') : t('admin.aiUpdated'));
       onSubmit();
       onClose();
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Thao tác thất bại');
+      toast.error(error.message || t('common.operationFailed'));
     },
   });
 
@@ -86,15 +88,15 @@ const UpsertAIProviderDialog: React.FC<UpsertAIProviderDialogProps> = (props) =>
       onDismiss={() => onClose(undefined)}
       header={
         <BaseHeader
-          title={isCreate ? 'Thêm cấu hình AI' : 'Chỉnh sửa cấu hình AI'}
-          description='Lưu toàn bộ danh sách cấu hình lên server (PUT /admin/ai-config).'
+          title={isCreate ? t('admin.addAiTitle') : t('admin.editAiTitle')}
+          description={t('admin.aiDescription')}
         />
       }
       body={
         <div className='grid gap-4'>
           <AppInput
-            label='Tên cấu hình'
-            placeholder='VD: OpenAI production, Gemini backup...'
+            label={t('admin.configName')}
+            placeholder={t('admin.configNamePlaceholder')}
             value={form.values.name ?? ''}
             onTextUpdate={(next) => void form.updateFieldValue('name', next, true)}
             isReadonly={isLoading}
@@ -102,7 +104,7 @@ const UpsertAIProviderDialog: React.FC<UpsertAIProviderDialogProps> = (props) =>
           />
 
           <div className='space-y-1.5'>
-            <Label>Loại provider</Label>
+            <Label>{t('admin.providerType')}</Label>
             <Select
               value={form.values.providerType}
               onValueChange={(val: AIProviderConfig['providerType']) =>
@@ -111,7 +113,7 @@ const UpsertAIProviderDialog: React.FC<UpsertAIProviderDialogProps> = (props) =>
               disabled={isLoading}
             >
               <SelectTrigger>
-                <SelectValue placeholder='Chọn loại' />
+                <SelectValue placeholder={t('admin.selectType')} />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value='OPENAI'>OpenAI</SelectItem>
@@ -121,8 +123,8 @@ const UpsertAIProviderDialog: React.FC<UpsertAIProviderDialogProps> = (props) =>
           </div>
 
           <AppInput
-            label='API Key'
-            placeholder='sk-...'
+            label={t('admin.apiKey')}
+            placeholder={t('admin.apiKeyPlaceholder')}
             value={form.values.apiKey}
             onTextUpdate={(next) => void form.updateFieldValue('apiKey', next, true)}
             isReadonly={isLoading}
@@ -130,7 +132,7 @@ const UpsertAIProviderDialog: React.FC<UpsertAIProviderDialogProps> = (props) =>
           />
 
           <AppInput
-            label='API URL'
+            label={t('admin.apiUrl')}
             placeholder={
               providerType === 'OPENAI' ? 'https://api.openai.com/v1' : 'https://generativelanguage.googleapis.com'
             }
@@ -141,7 +143,7 @@ const UpsertAIProviderDialog: React.FC<UpsertAIProviderDialogProps> = (props) =>
           />
 
           <AppInput
-            label='Model'
+            label={t('admin.model')}
             placeholder={providerType === 'OPENAI' ? 'gpt-4o' : 'gemini-1.5-pro'}
             value={form.values.model}
             onTextUpdate={(next) => void form.updateFieldValue('model', next, true)}
@@ -151,8 +153,8 @@ const UpsertAIProviderDialog: React.FC<UpsertAIProviderDialogProps> = (props) =>
 
           <div className='flex items-center justify-between p-3 bg-muted/50 rounded-lg border'>
             <div className='space-y-0.5'>
-              <Label>Enabled</Label>
-              <p className='text-[11px] text-muted-foreground'>Bật để đưa cấu hình này vào hàng đợi round-robin</p>
+              <Label>{t('admin.enabled')}</Label>
+              <p className='text-[11px] text-muted-foreground'>{t('admin.enabledHelp')}</p>
             </div>
             <Switch
               checked={form.values.enabled}
@@ -166,13 +168,13 @@ const UpsertAIProviderDialog: React.FC<UpsertAIProviderDialogProps> = (props) =>
         <BaseAction
           actions={[
             {
-              title: 'Cancel',
+              title: t('common.cancel'),
               color: 'danger-outline',
               actionCallback: () => onClose(undefined),
               disabled: isLoading,
             },
             {
-              title: isCreate ? 'Tạo' : 'Lưu',
+              title: isCreate ? t('common.create') : t('common.save'),
               color: 'primary',
               actionCallback: () => void form.submitForm(),
               disabled: isLoading,

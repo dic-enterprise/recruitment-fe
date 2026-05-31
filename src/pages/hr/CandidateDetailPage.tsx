@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/shared/components/ui/button';
 import {
   DropdownMenu,
@@ -8,13 +9,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/shared/components/ui/dropdown-menu';
-import { candidateService } from '@/shared/lib/api-services';
+import { candidateService, interviewProcessService } from '@/shared/lib/api-services';
 import { downloadBlob, getCvPreviewUrl, isCvBrowserPreviewable } from '@/shared/lib/cv-file-utils';
 import { ExtractStatusBadge, EmploymentBadge } from '@/shared/components/StatusBadges';
 import PageHeader from '@/shared/components/PageHeader';
 import { formatDateTime } from '@/shared/lib/utils';
 import { useToast } from '@/shared/hooks/use-toast';
-import { ArrowLeft, Mail, Phone, FileText, AlertCircle, Loader2, Eye, Download, User } from 'lucide-react';
+import { ArrowLeft, Mail, Phone, FileText, AlertCircle, Loader2, Eye, Download, User, GitBranch } from 'lucide-react';
+import { PipelineStatusBadge } from '@/shared/components/hr/PipelineStatusBadge';
 
 // ---------------------------------------------------------------------------
 // Sub-components
@@ -82,6 +84,7 @@ function Section({
 // ---------------------------------------------------------------------------
 
 export default function CandidateDetailPage() {
+  const { t } = useTranslation();
   const { candidateId } = useParams();
   const { toast } = useToast();
   const [cvAction, setCvAction] = useState<'preview' | 'download' | null>(null);
@@ -89,6 +92,12 @@ export default function CandidateDetailPage() {
   const { data: candidate, isLoading } = useQuery({
     queryKey: ['candidate', candidateId],
     queryFn: () => candidateService.getById(candidateId!),
+    enabled: !!candidateId,
+  });
+
+  const { data: interviewProcesses = [] } = useQuery({
+    queryKey: ['interview-processes', 'candidate', candidateId],
+    queryFn: () => interviewProcessService.getByCandidateId(candidateId!),
     enabled: !!candidateId,
   });
 
@@ -100,8 +109,8 @@ export default function CandidateDetailPage() {
       downloadBlob(blob, candidate.cvFileName);
     } catch {
       toast({
-        title: 'Không thể tải CV',
-        description: 'Không tải được file từ server.',
+        title: t('candidates.cannotLoadCv'),
+        description: t('candidates.cannotDownloadCv'),
         variant: 'destructive',
       });
     } finally {
@@ -119,7 +128,7 @@ export default function CandidateDetailPage() {
   }
 
   if (!candidate) {
-    return <div className='p-8 text-center text-sm text-muted-foreground'>Candidate not found</div>;
+    return <div className='p-8 text-center text-sm text-muted-foreground'>{t('candidates.notFound')}</div>;
   }
 
   const cvBusy = cvAction != null;
@@ -129,15 +138,15 @@ export default function CandidateDetailPage() {
   const displayName =
     candidate.name?.trim() ||
     (candidate.extractStatus === 'FAILED'
-      ? (candidate.cvFileName?.replace(/\.pdf$/i, '') ?? 'Unknown')
-      : 'Processing…');
+      ? (candidate.cvFileName?.replace(/\.pdf$/i, '') ?? t('candidates.unknown'))
+      : t('candidates.processing'));
 
   return (
     <div className='flex h-full flex-col'>
       {/* ── Header ── */}
       <PageHeader
         title={displayName}
-        description={candidate.email ?? 'No email extracted'}
+        description={candidate.email ?? t('candidates.noEmail')}
         actions={
           <div className='flex items-center gap-2'>
             {/* CV dropdown */}
@@ -157,13 +166,13 @@ export default function CandidateDetailPage() {
                   <DropdownMenuItem asChild disabled={cvBusy}>
                     <a href={getCvPreviewUrl(candidateId)} target='_blank' rel='noopener noreferrer'>
                       <Eye className='mr-2 h-4 w-4' />
-                      Xem trước CV
+                      {t('candidates.previewCv')}
                     </a>
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuItem onClick={() => void handleDownloadCv()} disabled={cvBusy}>
                   <Download className='mr-2 h-4 w-4' />
-                  Tải CV
+                  {t('candidates.downloadCv')}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -172,7 +181,7 @@ export default function CandidateDetailPage() {
             <Button variant='outline' asChild className='gap-1.5'>
               <Link to='/hr/candidates'>
                 <ArrowLeft className='h-3.5 w-3.5' />
-                Back
+                {t('common.back')}
               </Link>
             </Button>
           </div>
@@ -182,40 +191,40 @@ export default function CandidateDetailPage() {
       {/* ── Body ── */}
       <div className='mx-auto w-full max-w-5xl space-y-3 pb-8'>
         {/* Profile */}
-        <Section title='Profile'>
+        <Section title={t('candidates.profile')}>
           <InfoRow
             icon={<User className='h-3.5 w-3.5' />}
-            label='Name'
+            label={t('candidates.name')}
             value={
               candidate.name?.trim() ? (
                 candidate.name.trim()
               ) : (
                 <span className='text-muted-foreground italic'>
-                  {candidate.extractStatus === 'FAILED' ? 'Extract failed' : 'Processing…'}
+                  {candidate.extractStatus === 'FAILED' ? t('candidates.extractFailed') : t('candidates.processing')}
                 </span>
               )
             }
           />
           <InfoRow
             icon={<Mail className='h-3.5 w-3.5' />}
-            label='Email'
+            label={t('candidates.email')}
             value={
               candidate.email ? (
                 <a href={`mailto:${candidate.email}`} className='text-primary hover:underline underline-offset-2'>
                   {candidate.email}
                 </a>
               ) : (
-                <span className='text-muted-foreground italic'>—</span>
+                <span className='text-muted-foreground italic'>{t('common.dash')}</span>
               )
             }
           />
           {candidate.phone && (
-            <InfoRow icon={<Phone className='h-3.5 w-3.5' />} label='Phone' value={candidate.phone} />
+            <InfoRow icon={<Phone className='h-3.5 w-3.5' />} label={t('candidates.phone')} value={candidate.phone} />
           )}
-          <InfoRow icon={<FileText className='h-3.5 w-3.5' />} label='CV file' value={candidate.cvFileName} mono />
+          <InfoRow icon={<FileText className='h-3.5 w-3.5' />} label={t('candidates.cvFile')} value={candidate.cvFileName} mono />
           <InfoRow
             icon={<span className='font-mono text-[10px] leading-none'>AT</span>}
-            label='Uploaded'
+            label={t('candidates.uploaded')}
             value={<span className='font-mono text-xs tabular-nums'>{formatDateTime(candidate.uploadedAt)}</span>}
           />
           {/* Badges row */}
@@ -225,13 +234,45 @@ export default function CandidateDetailPage() {
           </div>
         </Section>
 
+        {/* Interview processes */}
+        {interviewProcesses.length > 0 && (
+          <Section
+            title={
+              <span className='flex items-center gap-1.5'>
+                <GitBranch className='h-3 w-3' />
+                {t('candidates.interviewProcesses')}
+              </span>
+            }
+          >
+            <div className='space-y-2'>
+              {interviewProcesses.map((p) => (
+                <div
+                  key={p.id}
+                  className='flex flex-wrap items-center justify-between gap-2 rounded-md border border-border/60 px-3 py-2'
+                >
+                  <div>
+                    <p className='text-sm font-medium'>{p.jobTitle}</p>
+                    <p className='text-xs text-muted-foreground'>{t('candidates.processNumber', { id: p.id })}</p>
+                  </div>
+                  <div className='flex items-center gap-2'>
+                    <PipelineStatusBadge status={p.status} size='sm' />
+                    <Button variant='outline' size='sm' asChild>
+                      <Link to={`/hr/interview-processes/${p.id}`}>{t('candidates.detail')}</Link>
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Section>
+        )}
+
         {/* Extract error */}
         {candidate.extractStatus === 'FAILED' && candidate.extractError && (
           <Section
             title={
               <span className='flex items-center gap-1.5'>
                 <AlertCircle className='h-3 w-3' />
-                Extract Error
+                {t('candidates.extractError')}
               </span>
             }
             variant='danger'
@@ -245,16 +286,16 @@ export default function CandidateDetailPage() {
 
         {/* Extracted info */}
         {candidate.extractStatus === 'COMPLETE' && candidate.skills && (
-          <Section title='Extracted Info'>
+          <Section title={t('candidates.extractedInfo')}>
             {candidate.experience && (
               <div className='mb-3 pb-3 border-b border-border/50'>
-                <p className='mb-1 text-xs text-muted-foreground uppercase tracking-wider'>Experience</p>
+                <p className='mb-1 text-xs text-muted-foreground uppercase tracking-wider'>{t('candidates.experience')}</p>
                 <p className='text-sm'>{candidate.experience}</p>
               </div>
             )}
             {candidate.skills.length > 0 && (
               <div>
-                <p className='mb-2 text-xs text-muted-foreground uppercase tracking-wider'>Skills</p>
+                <p className='mb-2 text-xs text-muted-foreground uppercase tracking-wider'>{t('candidates.skills')}</p>
                 <div className='flex flex-wrap gap-1.5'>
                   {candidate.skills.map((s) => (
                     <span

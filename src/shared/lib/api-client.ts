@@ -30,18 +30,25 @@ apiClient.interceptors.response.use(
       if (codeResponse.success) {
         return codeResponse.data; // Return just the data part
       } else {
-        // If success is false, throw the message as an error
-        return Promise.reject(new Error(codeResponse.message || 'Unknown API Error'));
+        const err = new Error(codeResponse.message || 'Unknown API Error') as Error & {
+          errorCode?: string;
+        };
+        const body = response.data as { errorCode?: string };
+        if (body?.errorCode) err.errorCode = body.errorCode;
+        return Promise.reject(err);
       }
     }
     
     return response.data;
   },
   (error) => {
-    // Handle HTTP errors (4xx, 5xx)
-    const message = error.response?.data?.message || error.message || 'Network Error';
-    return Promise.reject(new Error(message));
-  }
+    const data = error.response?.data as { message?: string; errorCode?: string } | undefined;
+    const err = new Error(data?.message || error.message || 'Network Error') as Error & {
+      errorCode?: string;
+    };
+    if (data?.errorCode) err.errorCode = data.errorCode;
+    return Promise.reject(err);
+  },
 );
 
 export default apiClient;

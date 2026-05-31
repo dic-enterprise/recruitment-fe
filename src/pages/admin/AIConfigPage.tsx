@@ -1,10 +1,11 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { adminService } from '@/shared/lib/api-services';
 import PageHeader from '@/shared/components/PageHeader';
 import { Button } from '@/shared/components/ui/button';
 import { BaseTable, type Column } from '@/shared/components/BaseTable';
 import { Badge } from '@/shared/components/ui/badge';
-import { Pencil, Cpu, Globe, Plus, Edit } from 'lucide-react';
+import { Cpu, Globe, Plus, Edit } from 'lucide-react';
 import useModal from '@/shared/hooks/useModal';
 import UpsertAIProviderDialog from './comps/UpsertAIProviderDialog';
 import type { AIProviderConfig } from '@/shared/types/api';
@@ -27,6 +28,7 @@ function maskApiKey(key: string): string {
 }
 
 export default function AIConfigPage() {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [modalNode, openModal] = useModal();
 
@@ -50,7 +52,7 @@ export default function AIConfigPage() {
 
   const columns: Column<AIProviderConfig>[] = [
     {
-      header: 'Name',
+      header: t('admin.name'),
       key: 'name',
       render: (item) => (
         <div className='flex flex-col'>
@@ -60,7 +62,7 @@ export default function AIConfigPage() {
       ),
     },
     {
-      header: 'Type',
+      header: t('admin.type'),
       key: 'providerType',
       render: (item) => (
         <Badge variant='outline' className='gap-1 px-1.5 py-0'>
@@ -70,36 +72,36 @@ export default function AIConfigPage() {
       ),
     },
     {
-      header: 'Endpoint',
+      header: t('admin.endpoint'),
       key: 'apiUrl',
       className: 'max-w-[220px] truncate text-xs text-muted-foreground',
     },
     {
-      header: 'API Key',
+      header: t('admin.apiKey'),
       key: 'apiKey',
       className: 'font-mono text-xs text-muted-foreground',
       render: (item) => maskApiKey(item.apiKey),
     },
     {
-      header: 'Status',
+      header: t('admin.status'),
       key: 'enabled',
       render: (item) =>
         item.enabled ? (
-          <Badge className='bg-success/10 text-success border-success/20 hover:bg-success/20'>Enabled</Badge>
+          <Badge className='bg-success/10 text-success border-success/20 hover:bg-success/20'>{t('common.enabled')}</Badge>
         ) : (
           <Badge variant='secondary' className='opacity-50'>
-            Disabled
+            {t('common.disabled')}
           </Badge>
         ),
     },
     {
-      header: 'Actions',
+      header: t('common.actions'),
       key: 'actions',
       width: '100px',
       render: (item) => (
         <Button variant='outline' size='sm' onClick={() => openUpsertDialog(item)}>
           <Edit className='mr-1.5 h-3.5 w-3.5' />
-          Edit
+          {t('common.edit')}
         </Button>
       ),
     },
@@ -108,12 +110,12 @@ export default function AIConfigPage() {
   return (
     <div className=''>
       <PageHeader
-        title='AI Configuration'
-        description='Thêm và quản lý nhiều cấu hình AI. Các bản ghi được bật sẽ được dùng luân phiên (round-robin); lỗi hoặc timeout sẽ chuyển sang cấu hình tiếp theo.'
+        title={t('admin.aiConfigTitle')}
+        description={t('admin.aiConfigDescription')}
         actions={
           <Button onClick={() => openUpsertDialog()} className='gap-2 h-8'>
             <Plus className='h-4 w-4' />
-            Thêm cấu hình
+            {t('admin.addConfig')}
           </Button>
         }
       />
@@ -122,7 +124,7 @@ export default function AIConfigPage() {
         data={configs}
         columns={columns}
         isLoading={isLoading}
-        emptyMessage='Chưa có cấu hình AI. Nhấn «Thêm cấu hình» để tạo mới.'
+        emptyMessage={t('admin.emptyAiConfig')}
         showIndex={true}
       />
       {modalNode}

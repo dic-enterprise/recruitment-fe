@@ -1,5 +1,7 @@
 import { useEffect, useId, useMemo, useState, type ReactNode } from 'react';
 import type { FormikErrors } from 'formik';
+import { useTranslation } from 'react-i18next';
+import i18n from '@/shared/i18n';
 import { Briefcase, Bold, Italic, Link2, List, MapPin, Plus, Target, FileText, X, Loader2 } from 'lucide-react';
 import { BaseAction } from '@/shared/components/dialog';
 import { Button } from '@/shared/components/ui/button.tsx';
@@ -31,9 +33,11 @@ function parseVndDigits(raw: string): number | undefined {
 }
 
 export function buildSalaryLabel(min?: number, max?: number): string | undefined {
-  if (min != null && max != null) return `${formatVnd(min)} – ${formatVnd(max)} VND`;
-  if (min != null) return `Từ ${formatVnd(min)} VND`;
-  if (max != null) return `Đến ${formatVnd(max)} VND`;
+  if (min != null && max != null) {
+    return i18n.t('jobs.salaryRange', { min: formatVnd(min), max: formatVnd(max) });
+  }
+  if (min != null) return i18n.t('jobs.salaryFrom', { amount: formatVnd(min) });
+  if (max != null) return i18n.t('jobs.salaryTo', { amount: formatVnd(max) });
   return undefined;
 }
 
@@ -146,19 +150,19 @@ function buildInitialValues(job: Job | null): JobFormValues {
 function validateJobForm(values: JobFormValues): FormikErrors<JobFormValues> {
   const errors: FormikErrors<JobFormValues> = {};
   if (!values.title?.trim()) {
-    errors.title = 'Nhập chức danh công việc';
+    errors.title = i18n.t('validation.enterJobTitle');
   }
   if (!values.departmentId) {
-    errors.departmentId = 'Chọn phòng ban';
+    errors.departmentId = i18n.t('validation.selectDepartment');
   }
   if (!values.requirements?.trim()) {
-    errors.requirements = 'Nhập yêu cầu tuyển dụng';
+    errors.requirements = i18n.t('validation.enterRequirements');
   }
   if (!values.description?.trim()) {
-    errors.description = 'Nhập mô tả công việc';
+    errors.description = i18n.t('validation.enterDescription');
   }
   if (values.minMatchingScore < 1 || values.minMatchingScore > 100) {
-    errors.minMatchingScore = 'Điểm từ 1 đến 100';
+    errors.minMatchingScore = i18n.t('validation.scoreRange');
   }
   return errors;
 }
@@ -222,6 +226,7 @@ export function EditJobForm({
   submitLabel,
   showProgress = true,
 }: EditJobFormProps) {
+  const { t } = useTranslation();
   const isEdit = initialJob != null;
 
   const { data: departmentList, isLoading: loadingDepts } = useQuery({
@@ -289,7 +294,7 @@ export function EditJobForm({
     void setFieldTouched('skills', true);
   };
 
-  const labelSubmit = submitLabel ?? (isEdit ? 'Lưu thay đổi' : 'Đăng tuyển');
+  const labelSubmit = submitLabel ?? (isEdit ? t('jobs.saveJob') : t('jobs.postJobVi'));
 
   const sectionTitle = (_n: number, icon: ReactNode, text: string) => (
     <div className='flex items-center gap-2 border-b border-slate-100 pb-2 mb-2'>
@@ -302,16 +307,16 @@ export function EditJobForm({
     <div className='space-y-4'>
       <Card className='border-none shadow-none bg-transparent'>
         <CardHeader className='px-0 pb-3 pt-0'>
-          {sectionTitle(1, <Briefcase className='h-4 w-4' />, 'Thông tin cốt lõi')}
+          {sectionTitle(1, <Briefcase className='h-4 w-4' />, t('jobs.coreInfo'))}
         </CardHeader>
         <CardContent className='p-0'>
           <div className='grid grid-cols-1 gap-4 sm:grid-cols-6'>
             <div className='space-y-1.5 sm:col-span-6'>
-              <Label htmlFor={titleId} className='text-xs font-medium text-muted-foreground'>Chức danh công việc</Label>
+              <Label htmlFor={titleId} className='text-xs font-medium text-muted-foreground'>{t('jobs.titleLabel')}</Label>
               <Input
                 id={titleId}
                 name='title'
-                placeholder='VD: Senior Product Designer'
+                placeholder={t('jobs.titlePlaceholder')}
                 value={values.title}
                 onChange={form.handleChange}
                 onBlur={form.handleBlur}
@@ -324,7 +329,7 @@ export function EditJobForm({
             </div>
 
             <div className='space-y-1.5 sm:col-span-3 lg:col-span-2'>
-              <Label className='text-xs font-medium text-muted-foreground'>Phòng ban</Label>
+              <Label className='text-xs font-medium text-muted-foreground'>{t('jobs.departmentLabel')}</Label>
               <Select
                 disabled={loadingDepts}
                 value={values.departmentId || undefined}
@@ -339,10 +344,10 @@ export function EditJobForm({
                   {loadingDepts ? (
                     <div className='flex items-center gap-2'>
                       <Loader2 className='h-3 w-3 animate-spin' />
-                      <span className='text-xs'>Đang tải...</span>
+                      <span className='text-xs'>{t('common.loading')}</span>
                     </div>
                   ) : (
-                    <SelectValue placeholder='Chọn phòng ban' className='text-xs' />
+                    <SelectValue placeholder={t('jobs.selectDepartment')} className='text-xs' />
                   )}
                 </SelectTrigger>
                 <SelectContent>
@@ -360,7 +365,7 @@ export function EditJobForm({
 
             {isEdit && (
               <div className='space-y-1.5 sm:col-span-3 lg:col-span-2'>
-                <Label className='text-xs font-medium text-muted-foreground'>Trạng thái tin</Label>
+                <Label className='text-xs font-medium text-muted-foreground'>{t('jobs.statusLabel')}</Label>
                 <Select
                   value={values.jobStatus}
                   onValueChange={(v) => {
@@ -372,16 +377,16 @@ export function EditJobForm({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value='ACTIVE'>Hoạt động (Active)</SelectItem>
-                    <SelectItem value='CLOSED'>Đã đóng (Closed)</SelectItem>
-                    <SelectItem value='ARCHIVED'>Lưu trữ (Archived)</SelectItem>
+                    <SelectItem value='ACTIVE'>{t('jobs.statusActive')}</SelectItem>
+                    <SelectItem value='CLOSED'>{t('jobs.statusClosed')}</SelectItem>
+                    <SelectItem value='ARCHIVED'>{t('jobs.statusArchived')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             )}
 
             <div className='space-y-1.5 sm:col-span-3 lg:col-span-2'>
-              <Label className='text-xs font-medium text-muted-foreground'>Mức độ ưu tiên</Label>
+              <Label className='text-xs font-medium text-muted-foreground'>{t('jobs.priorityLabel')}</Label>
               <Select
                 value={values.recruitmentUrgency}
                 onValueChange={(v) => {
@@ -393,15 +398,15 @@ export function EditJobForm({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value='URGENT'>Khẩn cấp</SelectItem>
-                  <SelectItem value='NORMAL'>Bình thường</SelectItem>
+                  <SelectItem value='URGENT'>{t('jobs.priorityUrgent')}</SelectItem>
+                  <SelectItem value='NORMAL'>{t('jobs.priorityNormal')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className='space-y-2.5 sm:col-span-3 lg:col-span-2'>
               <div className='flex items-center justify-between'>
-                <Label className='text-xs font-medium text-muted-foreground'>Điểm đạt (Interview Threshold)</Label>
+                <Label className='text-xs font-medium text-muted-foreground'>{t('jobs.thresholdLabel')}</Label>
                 <span className='text-xs font-bold text-primary'>{values.minMatchingScore}%</span>
               </div>
               <div className='px-1 pt-1'>
@@ -417,7 +422,7 @@ export function EditJobForm({
                   className='py-2'
                 />
               </div>
-              <p className='text-[10px] text-muted-foreground'>Ứng viên đạt từ {values.minMatchingScore}% sẽ được đề xuất phỏng vấn.</p>
+              <p className='text-[10px] text-muted-foreground'>{t('jobs.thresholdHelp', { score: values.minMatchingScore })}</p>
             </div>
           </div>
         </CardContent>
@@ -426,14 +431,14 @@ export function EditJobForm({
 
       <Card className='border-none shadow-none bg-transparent'>
         <CardHeader className='px-0 pb-2 pt-0'>
-          {sectionTitle(3, <FileText className='h-4 w-4' />, 'Yêu cầu tuyển dụng')}
+          {sectionTitle(3, <FileText className='h-4 w-4' />, t('jobs.requirements'))}
         </CardHeader>
         <CardContent className='p-0 space-y-3'>
           <div className='group relative flex flex-col rounded-lg border bg-background focus-within:ring-1 focus-within:ring-primary'>
             <Textarea
               name='requirements'
               className='min-h-[140px] border-none bg-transparent resize-none focus-visible:ring-0 text-sm py-3'
-              placeholder='Kỹ năng, kinh nghiệm, bằng cấp và các điểm cộng...'
+              placeholder={t('jobs.requirementsPlaceholder')}
               value={values.requirements}
               onChange={form.handleChange}
               onBlur={form.handleBlur}
@@ -445,7 +450,7 @@ export function EditJobForm({
 
       <Card className='border-none shadow-none bg-transparent'>
         <CardHeader className='px-0 pb-2 pt-0'>
-          {sectionTitle(4, <Briefcase className='h-4 w-4' />, 'Mô tả công việc cụ thể')}
+          {sectionTitle(4, <Briefcase className='h-4 w-4' />, t('jobs.descriptionSection'))}
         </CardHeader>
         <CardContent className='p-0 space-y-3'>
           <div className='group relative flex flex-col rounded-lg border bg-background focus-within:ring-1 focus-within:ring-primary'>
@@ -465,7 +470,7 @@ export function EditJobForm({
               id={descId}
               name='description'
               className='min-h-[150px] border-none bg-transparent resize-none focus-visible:ring-0 text-sm py-3'
-              placeholder='Chi tiết trách nhiệm và vai trò...'
+              placeholder={t('jobs.descriptionPlaceholder')}
               value={values.description}
               onChange={form.handleChange}
               onBlur={form.handleBlur}
@@ -483,7 +488,7 @@ export function EditJobForm({
         <div className='hidden flex-1 items-center gap-4 sm:flex'>
           <div className='flex-1'>
             <div className='mb-1 flex justify-between text-[10px] font-bold uppercase text-slate-400'>
-              <span>Hoàn tất hồ sơ</span>
+              <span>{t('jobs.profileComplete')}</span>
               <span>{progress}%</span>
             </div>
             <Progress value={progress} className='h-1.5 bg-slate-100' />
@@ -492,7 +497,7 @@ export function EditJobForm({
       )}
       <div className='flex items-center gap-3'>
         {onCancel && !isEdit && (
-          <Button type='button' variant='danger-outline' className='h-10 px-6 text-sm font-medium' onClick={onCancel}>Hủy</Button>
+          <Button type='button' variant='danger-outline' className='h-10 px-6 text-sm font-medium' onClick={onCancel}>{t('jobs.cancel')}</Button>
         )}
         <Button
           type='button'

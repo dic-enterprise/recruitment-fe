@@ -9,7 +9,33 @@ import {
   MatchQueueItem,
   AIConfig,
   AIProviderConfig,
-  InterviewSchedule
+  InterviewSchedule,
+  InterviewScheduleCalendarParams,
+  InterviewScheduleCalendarResponse,
+  CreateInterviewScheduleRequest,
+  UpdateInterviewScheduleRequest,
+  CancelInterviewScheduleRequest,
+  RecordInterviewResultRequest,
+  InterviewResultDetail,
+  InterviewScheduleDetail,
+  InterviewProcess,
+  InterviewProcessDetail,
+  PaginatedInterviewProcesses,
+  CreateInterviewProcessRequest,
+  UpdateInterviewProcessRequest,
+  UpdateContactRequest,
+  InterviewProcessListParams,
+  UploadCandidatesResponse,
+  UploadCandidatesOptions,
+  TriggerMatchRequest,
+  TriggerMatchResponse,
+  JobOffer,
+  UpsertOfferRequest,
+  SendOfferRequest,
+  UpdateOfferStatusRequest,
+  OnboardPlan,
+  UpsertOnboardRequest,
+  OnboardConfirmResponse,
 } from '../types/api';
 
 export const departmentService = {
@@ -99,15 +125,39 @@ export const candidateService = {
       throw error;
     }
   },
-  uploadCVs: async (files: File[]): Promise<Candidate[]> => {
+  uploadCVs: async (
+    files: File[],
+    options?: UploadCandidatesOptions,
+  ): Promise<UploadCandidatesResponse> => {
     try {
       const formData = new FormData();
       for (const file of files) {
         formData.append('files', file);
       }
-      return await apiClient.post('/candidates/upload', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+      if (options?.jobIds?.length) {
+        for (const jobId of options.jobIds) {
+          formData.append('jobIds', String(jobId));
+        }
+      }
+      if (options?.source) {
+        formData.append('source', options.source);
+      }
+      const raw = await apiClient.post<UploadCandidatesResponse | Candidate[]>(
+        '/candidates/upload',
+        formData,
+        {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        },
+      );
+      if (Array.isArray(raw)) {
+        const jobCount = options?.jobIds?.length ?? 0;
+        return {
+          candidates: raw,
+          extractTasksQueued: raw.length,
+          matchTasksQueued: jobCount > 0 ? raw.length * jobCount : 0,
+        };
+      }
+      return raw;
     } catch (error) {
       console.error('Failed to upload CVs:', error);
       throw error;
@@ -156,9 +206,22 @@ export const matchService = {
       throw error;
     }
   },
+  /** @deprecated Prefer triggerMatchBatch — single job */
   triggerMatch: async (jobId: string, candidateIds: string[]): Promise<void> => {
+    await matchService.triggerMatchBatch({
+      jobIds: [Number(jobId)],
+      candidateIds: candidateIds.map(Number),
+    });
+  },
+
+  triggerMatchBatch: async (body: TriggerMatchRequest): Promise<TriggerMatchResponse> => {
     try {
-      await apiClient.post('/matches/trigger', { jobId, candidateIds });
+      const raw = await apiClient.post<TriggerMatchResponse | void>('/matches/trigger', body);
+      if (raw && typeof raw === 'object' && 'matchTasksQueued' in raw) {
+        return raw as TriggerMatchResponse;
+      }
+      const queued = body.jobIds.length * body.candidateIds.length;
+      return { matchTasksQueued: queued, skippedCandidateIds: [] };
     } catch (error) {
       console.error('Failed to trigger match:', error);
       throw error;
@@ -214,12 +277,231 @@ export const adminService = {
   },
 };
 
+/** @deprecated Phase 3 — dùng `interviewScheduleService.getCalendar` */
 export const scheduleService = {
   getInterviews: async (params: { from: string; to: string }): Promise<InterviewSchedule[]> => {
+    const startDate = params.from.slice(0, 10);
+    const endDate = params.to.slice(0, 10);
+    const data = await interviewScheduleService.getCalendar({ startDate, endDate });
+    return data.items;
+  },
+};
+
+export const interviewScheduleService = {
+  getCalendar: async (
+    params: InterviewScheduleCalendarParams,
+  ): Promise<InterviewScheduleCalendarResponse> => {
     try {
-      return await apiClient.get('/schedules/interviews', { params });
+      return await apiClient.get('/interview-schedules', {
+        params: { timezone: 'Asia/Ho_Chi_Minh', calendarOnly: true, ...params },
+      });
     } catch (error) {
-      console.error('Failed to fetch interview schedules:', error);
+      console.error('Failed to fetch interview schedules calendar:', error);
+      throw error;
+    }
+  },
+
+  getById: async (id: string | number): Promise<InterviewScheduleDetail> => {
+    try {
+      return await apiClient.get(`/interview-schedules/${id}`);
+    } catch (error) {
+      console.error(`Failed to fetch interview schedule ${id}:`, error);
+      throw error;
+    }
+  },
+
+  create: async (body: CreateInterviewScheduleRequest): Promise<InterviewSchedule> => {
+    try {
+      return await apiClient.post('/interview-schedules', {
+        timezone: 'Asia/Ho_Chi_Minh',
+        ...body,
+      });
+    } catch (error) {
+      console.error('Failed to create interview schedule:', error);
+      throw error;
+    }
+  },
+
+  update: async (
+    id: string | number,
+    body: UpdateInterviewScheduleRequest,
+  ): Promise<InterviewSchedule> => {
+    try {
+      return await apiClient.patch(`/interview-schedules/${id}`, body);
+    } catch (error) {
+      console.error(`Failed to update interview schedule ${id}:`, error);
+      throw error;
+    }
+  },
+
+  cancel: async (
+    id: string | number,
+    body: CancelInterviewScheduleRequest,
+  ): Promise<InterviewSchedule> => {
+    try {
+      return await apiClient.post(`/interview-schedules/${id}/cancel`, body);
+    } catch (error) {
+      console.error(`Failed to cancel interview schedule ${id}:`, error);
+      throw error;
+    }
+  },
+
+  getByProcessId: async (processId: string | number): Promise<InterviewSchedule[]> => {
+    try {
+      return await apiClient.get(`/interview-processes/${processId}/schedules`);
+    } catch (error) {
+      console.error(`Failed to fetch schedules for process ${processId}:`, error);
+      throw error;
+    }
+  },
+
+  recordResult: async (
+    processId: string | number,
+    body: RecordInterviewResultRequest,
+  ): Promise<InterviewResultDetail> => {
+    try {
+      return await apiClient.post(`/interview-processes/${processId}/interview-result`, body);
+    } catch (error) {
+      console.error(`Failed to record interview result for process ${processId}:`, error);
+      throw error;
+    }
+  },
+};
+
+export const interviewProcessService = {
+  getAll: async (params?: InterviewProcessListParams): Promise<PaginatedInterviewProcesses> => {
+    try {
+      return await apiClient.get('/interview-processes', { params });
+    } catch (error) {
+      console.error('Failed to fetch interview processes:', error);
+      throw error;
+    }
+  },
+
+  getById: async (id: string): Promise<InterviewProcessDetail> => {
+    try {
+      return await apiClient.get(`/interview-processes/${id}`);
+    } catch (error) {
+      console.error(`Failed to fetch interview process ${id}:`, error);
+      throw error;
+    }
+  },
+
+  getByCandidateId: async (candidateId: string): Promise<InterviewProcess[]> => {
+    try {
+      return await apiClient.get(`/interview-processes/candidate/${candidateId}`);
+    } catch (error) {
+      console.error(`Failed to fetch processes for candidate ${candidateId}:`, error);
+      throw error;
+    }
+  },
+
+  create: async (body: CreateInterviewProcessRequest): Promise<InterviewProcess> => {
+    try {
+      return await apiClient.post('/interview-processes', body);
+    } catch (error) {
+      console.error('Failed to create interview process:', error);
+      throw error;
+    }
+  },
+
+  update: async (id: string, body: UpdateInterviewProcessRequest): Promise<InterviewProcess> => {
+    try {
+      return await apiClient.patch(`/interview-processes/${id}`, body);
+    } catch (error) {
+      console.error(`Failed to update interview process ${id}:`, error);
+      throw error;
+    }
+  },
+
+  updateContact: async (id: string, body: UpdateContactRequest): Promise<InterviewProcess> => {
+    try {
+      return await apiClient.post(`/interview-processes/${id}/contact`, body);
+    } catch (error) {
+      console.error(`Failed to update contact for process ${id}:`, error);
+      throw error;
+    }
+  },
+
+  reject: async (id: string, reason: string): Promise<InterviewProcess> => {
+    try {
+      return await apiClient.post(`/interview-processes/${id}/reject`, { reason });
+    } catch (error) {
+      console.error(`Failed to reject interview process ${id}:`, error);
+      throw error;
+    }
+  },
+
+  getOffer: async (processId: string | number): Promise<JobOffer | null> => {
+    try {
+      const data = await apiClient.get<JobOffer | null>(`/interview-processes/${processId}/offer`);
+      return data ?? null;
+    } catch (error) {
+      console.error(`Failed to fetch offer for process ${processId}:`, error);
+      throw error;
+    }
+  },
+
+  upsertOffer: async (processId: string | number, body: UpsertOfferRequest): Promise<JobOffer> => {
+    try {
+      return await apiClient.put(`/interview-processes/${processId}/offer`, body);
+    } catch (error) {
+      console.error(`Failed to save offer for process ${processId}:`, error);
+      throw error;
+    }
+  },
+
+  sendOffer: async (
+    processId: string | number,
+    body?: SendOfferRequest,
+  ): Promise<JobOffer> => {
+    try {
+      return await apiClient.post(`/interview-processes/${processId}/offer/send`, body ?? {});
+    } catch (error) {
+      console.error(`Failed to send offer for process ${processId}:`, error);
+      throw error;
+    }
+  },
+
+  updateOfferStatus: async (
+    processId: string | number,
+    body: UpdateOfferStatusRequest,
+  ): Promise<JobOffer> => {
+    try {
+      return await apiClient.patch(`/interview-processes/${processId}/offer/status`, body);
+    } catch (error) {
+      console.error(`Failed to update offer status for process ${processId}:`, error);
+      throw error;
+    }
+  },
+
+  getOnboard: async (processId: string | number): Promise<OnboardPlan | null> => {
+    try {
+      const data = await apiClient.get<OnboardPlan | null>(`/interview-processes/${processId}/onboard`);
+      return data ?? null;
+    } catch (error) {
+      console.error(`Failed to fetch onboard plan for process ${processId}:`, error);
+      throw error;
+    }
+  },
+
+  upsertOnboard: async (
+    processId: string | number,
+    body: UpsertOnboardRequest,
+  ): Promise<OnboardPlan> => {
+    try {
+      return await apiClient.put(`/interview-processes/${processId}/onboard`, body);
+    } catch (error) {
+      console.error(`Failed to save onboard plan for process ${processId}:`, error);
+      throw error;
+    }
+  },
+
+  confirmOnboard: async (processId: string | number): Promise<OnboardConfirmResponse> => {
+    try {
+      return await apiClient.post(`/interview-processes/${processId}/onboard/confirm`);
+    } catch (error) {
+      console.error(`Failed to confirm onboard for process ${processId}:`, error);
       throw error;
     }
   },

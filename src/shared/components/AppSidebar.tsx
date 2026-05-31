@@ -9,22 +9,25 @@ import {
   CheckSquare,
   Settings,
   CalendarDays,
+  GitBranch,
   ChevronLeft,
 } from 'lucide-react';
-import { SetStateAction, useState } from 'react';
+import { SetStateAction } from 'react';
+import { useTranslation } from 'react-i18next';
 
 const hrLinks = [
-  { to: '/hr/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/hr/schedule', label: 'Schedule', icon: CalendarDays },
-  { to: '/hr/matches', label: 'Matching CV', icon: CheckSquare },
-  { to: '/hr/candidates', label: 'Candidates', icon: Users },
-  { to: '/hr/jobs', label: 'Jobs', icon: Briefcase },
-  { to: '/hr/departments', label: 'Departments', icon: Building2 },
+  { to: '/hr/dashboard', labelKey: 'nav.dashboard', icon: LayoutDashboard },
+  { to: '/hr/calendar', labelKey: 'nav.calendar', icon: CalendarDays },
+  { to: '/hr/interview-processes', labelKey: 'nav.interviewProcess', icon: GitBranch },
+  { to: '/hr/matches', labelKey: 'nav.matchingCv', icon: CheckSquare },
+  { to: '/hr/candidates', labelKey: 'nav.candidates', icon: Users },
+  { to: '/hr/jobs', labelKey: 'nav.jobs', icon: Briefcase },
+  { to: '/hr/departments', labelKey: 'nav.departments', icon: Building2 },
 ];
 
 const adminLinks = [
-  { to: '/admin/extract-errors', label: 'Extract Errors', icon: AlertTriangle },
-  { to: '/admin/ai-config', label: 'AI Configuration', icon: Settings },
+  { to: '/admin/extract-errors', labelKey: 'nav.extractErrors', icon: AlertTriangle },
+  { to: '/admin/ai-config', labelKey: 'nav.aiConfig', icon: Settings },
 ];
 interface NavLinkProps {
   to: string;
@@ -76,6 +79,7 @@ interface AppSideBarProps {
 }
 
 export default function AppSidebar(props: AppSideBarProps) {
+  const { t } = useTranslation();
   const location = useLocation();
 
   const { collapsed, setCollapsed } = props;
@@ -104,8 +108,8 @@ export default function AppSidebar(props: AppSideBarProps) {
             collapsed ? 'w-0 opacity-0' : 'w-auto opacity-100',
           )}
         >
-          <h1 className='whitespace-nowrap text-base font-bold text-sidebar-primary-foreground'>RecruitPro</h1>
-          <p className='whitespace-nowrap text-xs text-sidebar-foreground/60'>Recruitment System</p>
+          <h1 className='whitespace-nowrap text-base font-bold text-sidebar-primary-foreground'>{t('nav.brand')}</h1>
+          <p className='whitespace-nowrap text-xs text-sidebar-foreground/60'>{t('nav.tagline')}</p>
         </div>
       </div>
 
@@ -118,12 +122,19 @@ export default function AppSidebar(props: AppSideBarProps) {
             collapsed ? 'h-0 opacity-0 mb-0' : 'h-auto opacity-100',
           )}
         >
-          HR / TA
+          {t('nav.hrSection')}
         </p>
 
         <div className='space-y-1'>
           {hrLinks.map((link) => (
-            <NavLink key={link.to} {...link} collapsed={collapsed} active={location.pathname.startsWith(link.to)} />
+            <NavLink
+              key={link.to}
+              to={link.to}
+              label={t(link.labelKey)}
+              icon={link.icon}
+              collapsed={collapsed}
+              active={location.pathname.startsWith(link.to)}
+            />
           ))}
         </div>
 
@@ -136,12 +147,19 @@ export default function AppSidebar(props: AppSideBarProps) {
             collapsed ? 'h-0 opacity-0 mb-0' : 'h-auto opacity-100',
           )}
         >
-          Admin IT
+          {t('nav.adminSection')}
         </p>
 
         <div className='space-y-1'>
           {adminLinks.map((link) => (
-            <NavLink key={link.to} {...link} collapsed={collapsed} active={location.pathname.startsWith(link.to)} />
+            <NavLink
+              key={link.to}
+              to={link.to}
+              label={t(link.labelKey)}
+              icon={link.icon}
+              collapsed={collapsed}
+              active={location.pathname.startsWith(link.to)}
+            />
           ))}
         </div>
 
@@ -153,7 +171,7 @@ export default function AppSidebar(props: AppSideBarProps) {
         <button
           onClick={() => setCollapsed((c) => !c)}
           className='flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-sm text-sidebar-foreground/60 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
-          title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          title={collapsed ? t('common.expandSidebar') : t('common.collapseSidebar')}
         >
           <ChevronLeft
             className={cn('h-4 w-4 shrink-0 transition-transform duration-300', collapsed ? 'rotate-180' : 'rotate-0')}

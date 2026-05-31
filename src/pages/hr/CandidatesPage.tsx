@@ -1,35 +1,35 @@
-import { useState, useRef, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { Input } from '@/shared/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select';
 import { candidateService } from '@/shared/lib/api-services';
 import { ExtractStatusBadge, EmploymentBadge } from '@/shared/components/StatusBadges';
+import { UploadCvDialog } from '@/shared/components/hr/UploadCvDialog';
 import PageHeader from '@/shared/components/PageHeader';
 import { formatDateTime } from '@/shared/lib/utils';
-import { Search, Loader2, Upload } from 'lucide-react';
+import { useStatusLabels } from '@/shared/i18n/hooks';
+import { Search, Upload, Eye } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
-import { useToast } from '@/shared/hooks/use-toast';
 import { BaseTable, type Column } from '@/shared/components/BaseTable';
 import type { Candidate, ExtractStatus, EmploymentTag } from '@/shared/types/api';
-import { validateCvUploadFiles } from '@/shared/lib/cv-upload-utils';
 import debounce from 'lodash/debounce';
 
-function getCandidateListName(candidate: Candidate): string {
-  if (candidate.name?.trim()) return candidate.name.trim();
-  if (candidate.extractStatus === 'FAILED') return 'Fail';
-  return 'Processing...';
-}
-
 export default function CandidatesPage() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
+  const { t } = useTranslation();
+  const { extractStatus, employment } = useStatusLabels();
+  const [uploadOpen, setUploadOpen] = useState(false);
   const [extractFilter, setExtractFilter] = useState<ExtractStatus | 'ALL'>('ALL');
   const [employmentFilter, setEmploymentFilter] = useState<EmploymentTag | 'ALL'>('ALL');
   const [keyword, setKeyword] = useState('');
   const [debouncedKeyword, setDebouncedKeyword] = useState('');
+
+  const getCandidateListName = (candidate: Candidate): string => {
+    if (candidate.name?.trim()) return candidate.name.trim();
+    if (candidate.extractStatus === 'FAILED') return t('candidates.fail');
+    return t('candidates.processing');
+  };
 
   const { data: candidates, isLoading } = useQuery({
     queryKey: ['candidates', extractFilter, employmentFilter, debouncedKeyword],
@@ -40,41 +40,6 @@ export default function CandidatesPage() {
         search: debouncedKeyword || undefined,
       }),
   });
-
-  const uploadMutation = useMutation({
-    mutationFn: (files: File[]) => candidateService.uploadCVs(files),
-    onSuccess: (created) => {
-      const count = created.length;
-      toast({
-        title: 'Thành công',
-        description:
-          count === 1 ? 'CV đã được tải lên và đang được xử lý.' : `Đã tải lên ${count} CV và đang được xử lý.`,
-      });
-      queryClient.invalidateQueries({ queryKey: ['candidates'] });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: 'Lỗi tải lên',
-        description: error.message || 'Không thể tải lên CV lúc này.',
-        variant: 'destructive',
-      });
-    },
-  });
-
-  const handleUploadClick = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const validation = validateCvUploadFiles(e.target.files);
-    if (validation.ok === false) {
-      toast({ title: 'Không thể upload', description: validation.message, variant: 'destructive' });
-      if (fileInputRef.current) fileInputRef.current.value = '';
-      return;
-    }
-    uploadMutation.mutate(validation.files);
-    if (fileInputRef.current) fileInputRef.current.value = '';
-  };
 
   const debouncedSetKeyword = useMemo(
     () =>
@@ -92,88 +57,85 @@ export default function CandidatesPage() {
 
   const columns: Column<Candidate>[] = [
     {
-      header: 'Name',
+      header: t('candidates.name'),
       key: 'name',
       width: '250px',
       render: (c) => {
         const displayName = getCandidateListName(c);
         const isExtractFailed = c.extractStatus === 'FAILED' && !c.name?.trim();
         return (
-          <Link
-            to={`/hr/candidates/${c.id}`}
+          <span
             className={
-              isExtractFailed
-                ? 'font-semibold text-destructive hover:underline'
-                : 'font-semibold text-primary hover:underline'
+              isExtractFailed ? 'font-semibold text-destructive' : 'font-semibold text-foreground'
             }
           >
             {displayName}
-          </Link>
+          </span>
         );
       },
     },
     {
-      header: 'Email',
+      header: t('candidates.email'),
       key: 'email',
-      render: (c) => c.email || '—',
+      render: (c) => c.email || t('common.dash'),
       className: 'text-muted-foreground',
     },
     {
-      header: 'CV File',
+      header: t('candidates.cvFile'),
       key: 'cvFileName',
       className: 'text-muted-foreground text-xs',
     },
     {
-      header: 'Extract',
+      header: t('candidates.extract'),
       key: 'extractStatus',
       render: (c) => <ExtractStatusBadge status={c.extractStatus} />,
     },
     {
-      header: 'Status',
+      header: t('candidates.status'),
       key: 'employmentTag',
       render: (c) => <EmploymentBadge tag={c.employmentTag} />,
     },
     {
-      header: 'Uploaded',
+      header: t('candidates.uploaded'),
       key: 'uploadedAt',
       render: (c) => formatDateTime(c.uploadedAt),
       className: 'text-muted-foreground',
+    },
+    {
+      header: t('common.action'),
+      key: 'action',
+      width: '72px',
+      className: 'text-center',
+      headerClassName: 'text-center',
+      render: (c) => (
+        <Button variant='ghost' size='icon' className='h-8 w-8' asChild title={t('common.viewDetail')}>
+          <Link to={`/hr/candidates/${c.id}`}>
+            <Eye className='h-4 w-4' />
+            <span className='sr-only'>{t('common.viewDetail')}</span>
+          </Link>
+        </Button>
+      ),
     },
   ];
 
   return (
     <div className='flex h-full flex-col'>
       <PageHeader
-        title='Candidates'
-        description='View all candidates and their CV extract status'
+        title={t('candidates.title')}
+        description={t('candidates.description')}
         actions={
-          <div className='flex items-center gap-2'>
-            <input
-              type='file'
-              ref={fileInputRef}
-              onChange={handleFileChange}
-              className='hidden'
-              accept='.pdf,application/pdf'
-              multiple
-            />
-            <p className='text-xs text-muted-foreground hidden sm:block'>PDF — tối đa 10MB/file, 100MB/lần</p>
-            <Button onClick={handleUploadClick} disabled={uploadMutation.isPending} className='h-8'>
-              {uploadMutation.isPending ? (
-                <Loader2 className='mr-2 h-4 w-4 animate-spin' />
-              ) : (
-                <Upload className='mr-2 h-4 w-4' />
-              )}
-              Upload CV
-            </Button>
-          </div>
+          <Button onClick={() => setUploadOpen(true)} className='h-8'>
+            <Upload className='mr-2 h-4 w-4' />
+            {t('candidates.uploadCv')}
+          </Button>
         }
       />
 
       <div className='mb-4 flex flex-wrap gap-3'>
-        <div className='relative flex-1 min-w-[200px]'>
+        <div className='relative min-w-[200px] flex-1'>
           <Search className='absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground' />
           <Input
-            placeholder='Search name or email...'
+            placeholder={t('candidates.searchPlaceholder')}
             value={keyword}
             onChange={(e) => {
               const value = e.target.value;
@@ -185,24 +147,24 @@ export default function CandidatesPage() {
         </div>
         <Select value={extractFilter} onValueChange={(v) => setExtractFilter(v as ExtractStatus | 'ALL')}>
           <SelectTrigger className='w-44'>
-            <SelectValue placeholder='Extract Status' />
+            <SelectValue placeholder={t('candidates.extractStatus')} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value='ALL'>All Extract Status</SelectItem>
-            <SelectItem value='PENDING'>Pending</SelectItem>
-            <SelectItem value='SCANNING'>Scanning</SelectItem>
-            <SelectItem value='COMPLETE'>Complete</SelectItem>
-            <SelectItem value='FAILED'>Failed</SelectItem>
+            <SelectItem value='ALL'>{t('candidates.allExtractStatus')}</SelectItem>
+            <SelectItem value='PENDING'>{extractStatus('PENDING')}</SelectItem>
+            <SelectItem value='SCANNING'>{extractStatus('SCANNING')}</SelectItem>
+            <SelectItem value='COMPLETE'>{extractStatus('COMPLETE')}</SelectItem>
+            <SelectItem value='FAILED'>{extractStatus('FAILED')}</SelectItem>
           </SelectContent>
         </Select>
         <Select value={employmentFilter} onValueChange={(v) => setEmploymentFilter(v as EmploymentTag | 'ALL')}>
           <SelectTrigger className='w-40'>
-            <SelectValue placeholder='Availability' />
+            <SelectValue placeholder={t('candidates.availability')} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value='ALL'>All</SelectItem>
-            <SelectItem value='CHUA_NHAN_VIEC'>Available</SelectItem>
-            <SelectItem value='DA_CO_VIEC'>Employed</SelectItem>
+            <SelectItem value='ALL'>{t('candidates.allAvailability')}</SelectItem>
+            <SelectItem value='CHUA_NHAN_VIEC'>{employment('CHUA_NHAN_VIEC')}</SelectItem>
+            <SelectItem value='DA_CO_VIEC'>{employment('DA_CO_VIEC')}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -210,11 +172,13 @@ export default function CandidatesPage() {
       <BaseTable
         data={candidates}
         columns={columns}
-        isLoading={isLoading || uploadMutation.isPending}
+        isLoading={isLoading}
         className='flex-1 min-h-0'
-        emptyMessage='No candidates found'
+        emptyMessage={t('candidates.empty')}
         showIndex={true}
       />
+
+      <UploadCvDialog open={uploadOpen} onOpenChange={setUploadOpen} />
     </div>
   );
 }

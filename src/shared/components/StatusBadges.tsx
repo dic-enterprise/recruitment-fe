@@ -1,49 +1,58 @@
 import { Badge } from '@/shared/components/ui/badge.tsx';
+import { useStatusLabels } from '@/shared/i18n/hooks';
 import { cn } from '@/shared/lib/utils.ts';
 import type { ExtractStatus, JobStatus, EmploymentTag, MatchQueueStatus } from '@/shared/lib/mock-data.ts';
 
-const jobStatusConfig: Record<JobStatus, { label: string; className: string }> = {
-  ACTIVE: { label: 'Active', className: 'bg-success text-success-foreground' },
-  CLOSED: { label: 'Closed', className: 'bg-muted text-muted-foreground' },
-  ARCHIVED: { label: 'Archived', className: 'bg-secondary text-secondary-foreground' },
+const jobStatusClassNames: Record<JobStatus, string> = {
+  ACTIVE: 'bg-success text-success-foreground',
+  CLOSED: 'bg-muted text-muted-foreground',
+  ARCHIVED: 'bg-secondary text-secondary-foreground',
 };
 
-const extractStatusConfig: Record<ExtractStatus, { label: string; className: string }> = {
-  PENDING: { label: 'Pending', className: 'bg-warning text-warning-foreground' },
-  SCANNING: { label: 'Scanning', className: 'bg-info text-info-foreground animate-pulse' },
-  COMPLETE: { label: 'Complete', className: 'bg-success text-success-foreground' },
-  FAILED: { label: 'Failed', className: 'bg-destructive text-destructive-foreground' },
+const extractStatusClassNames: Record<ExtractStatus, string> = {
+  PENDING: 'bg-warning text-warning-foreground',
+  SCANNING: 'bg-info text-info-foreground animate-pulse',
+  COMPLETE: 'bg-success text-success-foreground',
+  FAILED: 'bg-destructive text-destructive-foreground',
 };
 
-const employmentTagConfig: Record<EmploymentTag, { label: string; className: string }> = {
-  CHUA_NHAN_VIEC: { label: 'Available', className: 'bg-accent text-accent-foreground' },
-  DA_CO_VIEC: { label: 'Employed', className: 'bg-secondary text-secondary-foreground' },
+const employmentTagClassNames: Record<EmploymentTag, string> = {
+  CHUA_NHAN_VIEC: 'bg-accent text-accent-foreground',
+  DA_CO_VIEC: 'bg-secondary text-secondary-foreground',
 };
 
-const queueStatusConfig: Record<MatchQueueStatus, { label: string; className: string }> = {
-  queued: { label: 'Queued', className: 'bg-warning text-warning-foreground' },
-  processing: { label: 'Processing', className: 'bg-info text-info-foreground animate-pulse' },
-  done: { label: 'Done', className: 'bg-success text-success-foreground' },
+const queueStatusClassNames: Record<MatchQueueStatus, string> = {
+  queued: 'bg-warning text-warning-foreground',
+  processing: 'bg-info text-info-foreground animate-pulse',
+  done: 'bg-success text-success-foreground',
 };
 
 export function JobStatusBadge({ status }: { status: JobStatus }) {
-  const config = jobStatusConfig[status];
-  return <Badge className={cn('border-0', config?.className)}>{config?.label}</Badge>;
+  const { jobStatus } = useStatusLabels();
+  return (
+    <Badge className={cn('border-0', jobStatusClassNames[status])}>{jobStatus(status)}</Badge>
+  );
 }
 
 export function ExtractStatusBadge({ status }: { status: ExtractStatus }) {
-  const config = extractStatusConfig[status];
-  return <Badge className={cn('border-0', config?.className)}>{config?.label}</Badge>;
+  const { extractStatus } = useStatusLabels();
+  return (
+    <Badge className={cn('border-0', extractStatusClassNames[status])}>{extractStatus(status)}</Badge>
+  );
 }
 
 export function EmploymentBadge({ tag }: { tag: EmploymentTag }) {
-  const config = employmentTagConfig[tag];
-  return <Badge className={cn('border-0', config?.className)}>{config?.label}</Badge>;
+  const { employment } = useStatusLabels();
+  return (
+    <Badge className={cn('border-0', employmentTagClassNames[tag])}>{employment(tag)}</Badge>
+  );
 }
 
 export function QueueStatusBadge({ status }: { status: MatchQueueStatus }) {
-  const config = queueStatusConfig[status];
-  return <Badge className={cn('border-0', config?.className)}>{config?.label}</Badge>;
+  const { queueStatus } = useStatusLabels();
+  return (
+    <Badge className={cn('border-0', queueStatusClassNames[status])}>{queueStatus(status)}</Badge>
+  );
 }
 
 export function ScoreBadge({ score }: { score: number }) {

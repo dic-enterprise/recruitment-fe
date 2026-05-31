@@ -52,6 +52,35 @@ export interface Candidate {
   experience?: string;
 }
 
+export type PipelineStatus =
+  | 'NONE'
+  | 'SHORTLISTED'
+  | 'CONTACTED'
+  | 'INTERVIEW_SCHEDULED'
+  | 'INTERVIEW_DONE'
+  | 'OFFER'
+  | 'ONBOARDED'
+  | 'REJECTED';
+
+export type ContactStatus = 'NOT_CONTACTED' | 'CONTACTED';
+
+export type ProcessActivityAction =
+  | 'CREATED'
+  | 'METADATA_UPDATED'
+  | 'CONTACT_MARKED'
+  | 'REJECTED'
+  | 'STATUS_CHANGED'
+  | 'INTERVIEW_SCHEDULED'
+  | 'INTERVIEW_RESCHEDULED'
+  | 'INTERVIEW_CANCELLED'
+  | 'INTERVIEW_RESULT_RECORDED'
+  | 'OFFER_DRAFTED'
+  | 'OFFER_SENT'
+  | 'OFFER_ACCEPTED'
+  | 'OFFER_DECLINED'
+  | 'ONBOARD_PLANNED'
+  | 'ONBOARD_CONFIRMED';
+
 export interface CVMatch {
   id: number;
   candidateId: number;
@@ -59,12 +88,109 @@ export interface CVMatch {
   jobId: number;
   jobTitle: string;
   score: number;
-  details: {
+  /** BE có thể chưa trả breakdown — UI hiển thị "—" khi thiếu */
+  details?: {
     skillMatch: number;
     experienceMatch: number;
     educationMatch: number;
-  };
+  } | null;
+  pipelineStatus?: PipelineStatus;
+  processId?: number | null;
   createdAt: string;
+}
+
+export interface InterviewProcess {
+  id: number;
+  matchId: number;
+  candidateId: number;
+  candidateName: string;
+  jobId: number;
+  jobTitle: string;
+  matchScore: number;
+  status: PipelineStatus;
+  contactStatus: ContactStatus;
+  contactNote?: string | null;
+  contactedAt?: string | null;
+  assignedHr?: string | null;
+  notes?: string | null;
+  rejectReason?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ProcessActivity {
+  id: number;
+  processId: number;
+  action: ProcessActivityAction;
+  fromStatus?: PipelineStatus;
+  toStatus?: PipelineStatus;
+  note?: string;
+  performedBy?: string;
+  createdAt: string;
+}
+
+export interface InterviewProcessDetail {
+  process: InterviewProcess;
+  activities: ProcessActivity[];
+}
+
+export interface PaginatedInterviewProcesses {
+  items: InterviewProcess[];
+  total: number;
+  page: number;
+  size: number;
+}
+
+export interface CreateInterviewProcessRequest {
+  matchId: number;
+  assignedHr?: string;
+  notes?: string;
+}
+
+export interface UpdateInterviewProcessRequest {
+  assignedHr?: string;
+  notes?: string;
+}
+
+export interface UpdateContactRequest {
+  contactStatus: ContactStatus;
+  contactNote?: string;
+}
+
+export interface InterviewProcessListParams {
+  jobId?: number;
+  status?: PipelineStatus;
+  contactStatus?: ContactStatus;
+  search?: string;
+  page?: number;
+  size?: number;
+}
+
+/** Response POST /candidates/upload (Phase 2) */
+export interface UploadCandidatesResponse {
+  candidates: Candidate[];
+  /** Số task EXTRACT_CV đã enqueue (thường = số file) */
+  extractTasksQueued: number;
+  /** Số task MATCH_JOB đã enqueue; 0 khi không gửi jobIds */
+  matchTasksQueued: number;
+}
+
+export interface UploadCandidatesOptions {
+  jobIds?: number[];
+  source?: string;
+}
+
+/** POST /matches/trigger — enqueue MATCH_JOB (cartesian candidate × job) */
+export interface TriggerMatchRequest {
+  jobIds: number[];
+  candidateIds: number[];
+}
+
+export interface TriggerMatchResponse {
+  /** Số task MATCH_JOB đã enqueue */
+  matchTasksQueued: number;
+  /** Candidate bị bỏ qua (extract không phải COMPLETE) */
+  skippedCandidateIds: number[];
 }
 
 export type MatchQueueStatus = 'queued' | 'processing' | 'done';
@@ -110,19 +236,168 @@ export interface AIProviderConfig {
 
 export type AIConfig = AIProviderConfig[];
 
-export type InterviewStatus = 'SCHEDULED' | 'COMPLETED' | 'CANCELLED';
+export type InterviewFormat = 'ONLINE' | 'ONSITE' | 'PHONE';
+
+export type InterviewScheduleStatus = 'SCHEDULED' | 'CANCELLED' | 'COMPLETED';
+
+export type InterviewOutcome = 'PASSED' | 'FAILED' | 'NO_SHOW' | 'WITHDRAWN';
 
 export interface InterviewSchedule {
   id: number;
+  processId: number;
   candidateId: number;
   candidateName: string;
   jobId: number;
   jobTitle: string;
-  startAt: string;
-  endAt: string;
-  location?: string;
-  meetingLink?: string;
-  interviewer?: string;
-  status: InterviewStatus;
+  matchScore?: number;
+  scheduledStart: string;
+  scheduledEnd: string;
+  timezone: string;
+  format: InterviewFormat;
+  location?: string | null;
+  meetingUrl?: string | null;
+  status: InterviewScheduleStatus;
+  notes?: string | null;
+  assignedHr?: string | null;
+  processStatus?: PipelineStatus;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface InterviewScheduleCalendarResponse {
+  startDate: string;
+  endDate: string;
+  timezone: string;
+  items: InterviewSchedule[];
+  total: number;
+}
+
+export interface InterviewScheduleCalendarParams {
+  startDate: string;
+  endDate: string;
+  timezone?: string;
+  jobId?: number;
+  candidateId?: number;
+  assignedHr?: string;
+  format?: InterviewFormat;
+  includeCancelled?: boolean;
+}
+
+export interface CreateInterviewScheduleRequest {
+  processId: number;
+  scheduledStart: string;
+  scheduledEnd: string;
+  timezone?: string;
+  format: InterviewFormat;
+  location?: string | null;
+  meetingUrl?: string | null;
   notes?: string;
+  assignedHr?: string;
+}
+
+export interface UpdateInterviewScheduleRequest {
+  scheduledStart?: string;
+  scheduledEnd?: string;
+  format?: InterviewFormat;
+  location?: string | null;
+  meetingUrl?: string | null;
+  notes?: string;
+  assignedHr?: string;
+}
+
+export interface CancelInterviewScheduleRequest {
+  reason: string;
+}
+
+export interface InterviewResult {
+  id: number;
+  scheduleId: number;
+  processId: number;
+  outcome: InterviewOutcome;
+  feedback?: string | null;
+  recordedBy?: string | null;
+  recordedAt: string;
+}
+
+export interface RecordInterviewResultRequest {
+  scheduleId: number;
+  outcome: InterviewOutcome;
+  feedback?: string;
+  recordedBy?: string;
+}
+
+export interface InterviewResultDetail {
+  result: InterviewResult;
+  process: Pick<InterviewProcess, 'id' | 'status' | 'contactStatus'>;
+}
+
+export interface InterviewScheduleDetail {
+  schedule: InterviewSchedule;
+  process: Pick<InterviewProcess, 'id' | 'status' | 'candidateName' | 'jobTitle'>;
+  result?: InterviewResult | null;
+}
+
+// ─── Phase 4: Offer & Onboard ───────────────────────────────────────────────
+
+export type OfferStatus = 'DRAFT' | 'SENT' | 'ACCEPTED' | 'DECLINED' | 'WITHDRAWN';
+
+export interface OfferPayload {
+  version: number;
+  fields: Record<string, string | number | null>;
+}
+
+export interface JobOffer {
+  id: number;
+  processId: number;
+  status: OfferStatus;
+  payload: OfferPayload;
+  sentAt?: string | null;
+  sentToEmail?: string | null;
+  sendError?: string | null;
+  createdBy?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface UpsertOfferRequest {
+  payload: OfferPayload;
+  createdBy?: string;
+}
+
+export interface SendOfferRequest {
+  resend?: boolean;
+}
+
+export interface UpdateOfferStatusRequest {
+  status: 'ACCEPTED' | 'DECLINED' | 'WITHDRAWN';
+  note?: string;
+}
+
+export interface OnboardPlan {
+  id: number;
+  processId: number;
+  onboardDate: string;
+  welcomeContactName: string;
+  welcomeContactEmail?: string | null;
+  welcomeContactPhone?: string | null;
+  arrangementNotes?: string | null;
+  departmentId?: number | null;
+  confirmedAt?: string | null;
+  confirmedBy?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface UpsertOnboardRequest {
+  onboardDate: string;
+  welcomeContactName: string;
+  welcomeContactEmail?: string;
+  welcomeContactPhone?: string;
+  arrangementNotes?: string;
+  confirmedBy?: string;
+}
+
+export interface OnboardConfirmResponse {
+  plan: OnboardPlan;
+  process: Pick<InterviewProcess, 'id' | 'status'>;
 }

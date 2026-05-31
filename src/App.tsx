@@ -1,4 +1,5 @@
 import { QueryClient, QueryClientProvider, QueryCache, MutationCache } from '@tanstack/react-query';
+import i18n from '@/shared/i18n';
 import { BrowserRouter, Route, Routes, Navigate } from 'react-router-dom';
 import { Toaster as Sonner, toast } from '@/shared/components/ui/sonner';
 import { Toaster } from '@/shared/components/ui/toaster';
@@ -10,6 +11,8 @@ import DashboardPage from './pages/hr/DashboardPage';
 import DepartmentsPage from './pages/hr/department/DepartmentsPage.tsx';
 import JobsPage from './pages/hr/JobsPage';
 import MatchResultsPage from './pages/hr/MatchResultsPage';
+import InterviewProcessesPage from './pages/hr/InterviewProcessesPage';
+import InterviewProcessDetailPage from './pages/hr/InterviewProcessDetailPage';
 import CandidatesPage from './pages/hr/CandidatesPage';
 import CandidateDetailPage from './pages/hr/CandidateDetailPage';
 import SchedulePage from './pages/hr/SchedulePage';
@@ -29,13 +32,13 @@ const queryClient = new QueryClient({
   queryCache: new QueryCache({
     onError: (error: any) => {
       // Hiển thị toast lỗi cho tất cả GET requests
-      toast.error(error.response?.data?.message || error.message || 'Lỗi kết nối server');
+      toast.error(error.response?.data?.message || error.message || i18n.t('common.serverError'));
     },
   }),
   mutationCache: new MutationCache({
     onError: (error: any) => {
       // Hiển thị toast lỗi cho tất cả POST/PUT/DELETE requests
-      toast.error(error.response?.data?.message || error.message || 'Thao tác thất bại');
+      toast.error(error.response?.data?.message || error.message || i18n.t('common.operationFailed'));
     },
   }),
 });
@@ -58,9 +61,12 @@ const App = () => (
             <Route path='/hr/departments' element={<DepartmentsPage />} />
             <Route path='/hr/jobs' element={<JobsPage />} />
             <Route path='/hr/matches' element={<MatchResultsPage />} />
+            <Route path='/hr/interview-processes' element={<InterviewProcessesPage />} />
+            <Route path='/hr/interview-processes/:id' element={<InterviewProcessDetailPage />} />
             <Route path='/hr/candidates' element={<CandidatesPage />} />
             <Route path='/hr/candidates/:candidateId' element={<CandidateDetailPage />} />
             <Route path='/hr/schedule' element={<SchedulePage />} />
+            <Route path='/hr/calendar' element={<SchedulePage />} />
 
             {/* Admin */}
             <Route path='/admin/extract-errors' element={<ExtractErrorsPage />} />

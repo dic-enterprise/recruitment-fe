@@ -1,11 +1,13 @@
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { candidateService } from '@/shared/lib/api-services';
 import { ExtractStatusBadge } from '@/shared/components/StatusBadges';
 import { FileText, AlertCircle, Loader2 } from 'lucide-react';
 
 export default function PublicCVStatusPage() {
+  const { t } = useTranslation();
   const { candidateId } = useParams();
 
   const { data: candidate, isLoading, error } = useQuery({
@@ -13,7 +15,6 @@ export default function PublicCVStatusPage() {
     queryFn: () => candidateService.getById(candidateId!),
     enabled: !!candidateId,
     refetchInterval: (status) => {
-      // Tự động refetch mỗi 3 giây nếu đang xử lý
       const extractStatus = status?.state?.data?.extractStatus;
       return extractStatus === 'PENDING' || extractStatus === 'SCANNING' ? 3000 : false;
     }
@@ -32,7 +33,9 @@ export default function PublicCVStatusPage() {
       <div className='flex min-h-screen items-center justify-center bg-background p-4'>
         <Card className='w-full max-w-md text-center'>
           <CardContent className='py-12'>
-            <p className='text-muted-foreground'>{error instanceof Error ? error.message : 'Candidate not found.'}</p>
+            <p className='text-muted-foreground'>
+              {error instanceof Error ? error.message : t('public.candidateNotFound')}
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -44,7 +47,7 @@ export default function PublicCVStatusPage() {
       <Card className='w-full max-w-md animate-fade-in'>
         <CardHeader className='text-center'>
           <FileText className='mx-auto h-10 w-10 text-primary' />
-          <CardTitle className='mt-2'>CV Extract Status</CardTitle>
+          <CardTitle className='mt-2'>{t('public.extractStatusTitle')}</CardTitle>
         </CardHeader>
         <CardContent className='space-y-4 text-center'>
           <p className='text-sm'>
@@ -58,7 +61,7 @@ export default function PublicCVStatusPage() {
             <div className='mt-4 rounded-lg border border-destructive bg-destructive/5 p-4 text-left'>
               <div className='flex items-center gap-2 mb-2'>
                 <AlertCircle className='h-4 w-4 text-destructive' />
-                <span className='text-sm font-semibold text-destructive'>Error</span>
+                <span className='text-sm font-semibold text-destructive'>{t('common.error')}</span>
               </div>
               {candidate.extractError.code && (
                 <p className='text-xs font-mono text-muted-foreground mb-1'>{candidate.extractError.code}</p>
@@ -68,7 +71,7 @@ export default function PublicCVStatusPage() {
           )}
           {(candidate.extractStatus === 'PENDING' || candidate.extractStatus === 'SCANNING') && (
             <p className='text-xs text-muted-foreground animate-pulse'>
-              Processing... this page will update automatically.
+              {t('public.processingAutoUpdate')}
             </p>
           )}
         </CardContent>

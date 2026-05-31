@@ -1,6 +1,7 @@
 import type { CSSProperties } from 'react';
 import { addHours, parseISO } from 'date-fns';
-import type { InterviewSchedule, InterviewStatus } from '../types/api';
+import i18n from '@/shared/i18n';
+import type { InterviewFormat, InterviewSchedule, InterviewScheduleStatus } from '../types/api';
 
 export type ScheduleCalendarEvent = {
   id: number;
@@ -10,19 +11,23 @@ export type ScheduleCalendarEvent = {
   resource: InterviewSchedule;
 };
 
-const STATUS_COLORS: Record<InterviewStatus, { backgroundColor: string; borderColor: string }> = {
+const STATUS_COLORS: Record<InterviewScheduleStatus, { backgroundColor: string; borderColor: string }> = {
   SCHEDULED: { backgroundColor: 'hsl(var(--primary))', borderColor: 'hsl(var(--primary))' },
   COMPLETED: { backgroundColor: 'hsl(142 76% 36%)', borderColor: 'hsl(142 76% 30%)' },
   CANCELLED: { backgroundColor: 'hsl(var(--muted-foreground))', borderColor: 'hsl(var(--muted))' },
 };
 
-export function toCalendarEvents(interviews: InterviewSchedule[]): ScheduleCalendarEvent[] {
-  return interviews.map((item) => {
-    const start = parseISO(item.startAt);
-    const end = item.endAt ? parseISO(item.endAt) : addHours(start, 1);
+export function getInterviewFormatLabel(format: InterviewFormat): string {
+  return i18n.t(`status.interviewFormat.${format}`, format);
+}
+
+export function toCalendarEvents(schedules: InterviewSchedule[]): ScheduleCalendarEvent[] {
+  return schedules.map((item) => {
+    const start = parseISO(item.scheduledStart);
+    const end = item.scheduledEnd ? parseISO(item.scheduledEnd) : addHours(start, 1);
     return {
       id: item.id,
-      title: `${item.candidateName} — ${item.jobTitle}`,
+      title: `${item.candidateName ?? i18n.t('schedule.candidateFallback')} — ${item.jobTitle ?? i18n.t('schedule.jobFallback')}`,
       start,
       end,
       resource: item,
@@ -30,7 +35,7 @@ export function toCalendarEvents(interviews: InterviewSchedule[]): ScheduleCalen
   });
 }
 
-export function getInterviewEventStyle(status: InterviewStatus): CSSProperties {
+export function getInterviewEventStyle(status: InterviewScheduleStatus): CSSProperties {
   const colors = STATUS_COLORS[status] ?? STATUS_COLORS.SCHEDULED;
   return {
     backgroundColor: colors.backgroundColor,

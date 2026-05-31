@@ -8,6 +8,7 @@ import {
   TableRow,
 } from '@/shared/components/ui/table';
 import { Loader2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/shared/lib/utils';
 
 export interface Column<T> {
@@ -36,12 +37,15 @@ export function BaseTable<T extends { id: string | number }>({
   columns,
   onRowClick,
   isLoading,
-  emptyMessage = 'No data available',
+  emptyMessage,
   className,
   rowClassName,
   stickyHeader = true,
   showIndex = false,
 }: BaseTableProps<T>) {
+  const { t } = useTranslation();
+  const resolvedEmptyMessage = emptyMessage ?? t('common.noData');
+
   return (
     <div className={cn('relative w-full overflow-auto rounded-md border border-slate-200 bg-card', className)}>
       {isLoading && (
@@ -111,7 +115,7 @@ export function BaseTable<T extends { id: string | number }>({
                   colSpan={columns.length + (showIndex ? 1 : 0)} 
                   className='h-32 text-center text-muted-foreground'
                 >
-                  {emptyMessage}
+                  {resolvedEmptyMessage}
                 </TableCell>
               </TableRow>
             )

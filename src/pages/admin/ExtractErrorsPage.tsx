@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { adminService } from '@/shared/lib/api-services';
 import { ExtractStatusBadge } from '@/shared/components/StatusBadges';
 import PageHeader from '@/shared/components/PageHeader';
@@ -6,6 +7,8 @@ import { BaseTable, type Column } from '@/shared/components/BaseTable';
 import type { Candidate } from '@/shared/types/api';
 
 export default function ExtractErrorsPage() {
+  const { t } = useTranslation();
+
   const { data: failedCandidates, isLoading } = useQuery({
     queryKey: ['extract-errors'],
     queryFn: adminService.getExtractErrors,
@@ -13,37 +16,37 @@ export default function ExtractErrorsPage() {
 
   const columns: Column<Candidate>[] = [
     {
-      header: 'Candidate',
+      header: t('admin.candidate'),
       key: 'name',
       render: (c) => <span className='font-semibold'>{c.name}</span>,
     },
     {
-      header: 'Email',
+      header: t('admin.email'),
       key: 'email',
       className: 'text-muted-foreground',
     },
     {
-      header: 'CV File',
+      header: t('admin.cvFile'),
       key: 'cvFileName',
       className: 'text-xs text-muted-foreground',
     },
     {
-      header: 'Status',
+      header: t('admin.status'),
       key: 'extractStatus',
       render: (c) => <ExtractStatusBadge status={c.extractStatus} />,
     },
     {
-      header: 'Error Code',
+      header: t('admin.errorCode'),
       key: 'errorCode',
-      render: (c) => <code className='rounded bg-muted px-1.5 py-0.5 font-mono text-xs'>{c.extractError?.code || '—'}</code>,
+      render: (c) => <code className='rounded bg-muted px-1.5 py-0.5 font-mono text-xs'>{c.extractError?.code || t('common.dash')}</code>,
     },
     {
-      header: 'Error Message',
+      header: t('admin.errorMessage'),
       key: 'errorMessage',
       className: 'max-w-xs text-sm',
       render: (c) => (
         <p className='truncate' title={c.extractError?.message}>
-          {c.extractError?.message || '—'}
+          {c.extractError?.message || t('common.dash')}
         </p>
       ),
     },
@@ -52,8 +55,8 @@ export default function ExtractErrorsPage() {
   return (
     <div className='flex h-full flex-col'>
       <PageHeader
-        title='Extract Errors'
-        description='Candidates with failed CV extraction'
+        title={t('admin.extractErrorsTitle')}
+        description={t('admin.extractErrorsDescription')}
       />
 
       <BaseTable
@@ -61,7 +64,7 @@ export default function ExtractErrorsPage() {
         columns={columns}
         isLoading={isLoading}
         className='flex-1 min-h-0'
-        emptyMessage='No extract errors at this time.'
+        emptyMessage={t('admin.noExtractErrors')}
         showIndex={true}
       />
     </div>

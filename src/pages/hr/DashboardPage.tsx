@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { statsService, jobService, matchService } from '@/shared/lib/api-services';
 import {
   Briefcase,
@@ -160,6 +161,8 @@ function JobRow({
   matchCount: number;
   highMatchCount: number;
 }) {
+  const { t } = useTranslation();
+
   return (
     <div className='group flex items-center justify-between gap-4 rounded-lg px-3 py-2.5 transition-colors hover:bg-muted/50'>
       <div className='min-w-0 flex-1'>
@@ -170,9 +173,9 @@ function JobRow({
         <div className='text-right'>
           <p className='text-sm font-semibold tabular-nums text-blue-600 dark:text-blue-400'>
             {highMatchCount}
-            <span className='ml-1 text-xs font-normal text-muted-foreground'>high</span>
+            <span className='ml-1 text-xs font-normal text-muted-foreground'>{t('dashboard.high')}</span>
           </p>
-          <p className='text-xs tabular-nums text-muted-foreground'>{matchCount} total</p>
+          <p className='text-xs tabular-nums text-muted-foreground'>{t('dashboard.total', { count: matchCount })}</p>
         </div>
         <ChevronRight className='h-3.5 w-3.5 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100' />
       </div>
@@ -210,6 +213,7 @@ function SectionCard({
 // ─── Dashboard Page ───────────────────────────────────────────────────────────
 
 export default function DashboardPage() {
+  const { t } = useTranslation();
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ['stats-summary'],
     queryFn: statsService.getSummary,
@@ -230,7 +234,7 @@ export default function DashboardPage() {
     return (
       <div className='flex h-64 flex-col items-center justify-center gap-3 text-muted-foreground'>
         <Loader2 className='h-6 w-6 animate-spin' />
-        <p className='text-sm'>Loading metrics…</p>
+        <p className='text-sm'>{t('dashboard.loadingMetrics')}</p>
       </div>
     );
   }
@@ -238,14 +242,14 @@ export default function DashboardPage() {
   if (!stats) {
     return (
       <div className='flex h-64 items-center justify-center'>
-        <p className='text-sm text-muted-foreground'>Failed to load statistics.</p>
+        <p className='text-sm text-muted-foreground'>{t('dashboard.loadFailed')}</p>
       </div>
     );
   }
 
   const primaryCards = [
     {
-      title: 'Active jobs',
+      title: t('dashboard.activeJobs'),
       value: stats.activeJobs,
       delta: '',
       deltaUp: true,
@@ -253,7 +257,7 @@ export default function DashboardPage() {
       variant: 'info' as StatVariant,
     },
     {
-      title: 'Total candidates',
+      title: t('dashboard.totalCandidates'),
       value: stats.totalCandidates,
       delta: '',
       deltaUp: true,
@@ -261,14 +265,14 @@ export default function DashboardPage() {
       variant: 'default' as StatVariant,
     },
     {
-      title: 'High matches ≥80',
+      title: t('dashboard.highMatches'),
       value: stats.highMatches,
-      subtitle: 'Top-tier candidates',
+      subtitle: t('dashboard.topTier'),
       icon: TrendingUp,
       variant: 'success' as StatVariant,
     },
     {
-      title: 'Avg match score',
+      title: t('dashboard.avgMatchScore'),
       value: `${stats.avgMatchScore}%`,
       delta: '',
       deltaUp: true,
@@ -279,23 +283,23 @@ export default function DashboardPage() {
 
   const extractCards = [
     {
-      title: 'Extracts complete',
+      title: t('dashboard.extractsComplete'),
       value: stats.extractsComplete,
-      subtitle: `of ${stats.totalCandidates} total`,
+      subtitle: t('dashboard.ofTotal', { count: stats.totalCandidates }),
       icon: CheckCircle,
       variant: 'success' as StatVariant,
     },
     {
-      title: 'Pending',
+      title: t('dashboard.pending'),
       value: stats.extractsPending,
-      subtitle: 'In queue',
+      subtitle: t('dashboard.inQueue'),
       icon: Clock,
       variant: 'warning' as StatVariant,
     },
     {
-      title: 'Extract failures',
+      title: t('dashboard.extractFailures'),
       value: stats.extractFailures,
-      delta: 'Needs IT action',
+      delta: t('dashboard.needsItAction'),
       deltaUp: false,
       icon: AlertTriangle,
       variant: 'danger' as StatVariant,
@@ -304,7 +308,7 @@ export default function DashboardPage() {
 
   return (
     <div className='space-y-4'>
-      <PageHeader title='Dashboard' description='Overview of active recruitment metrics' />
+      <PageHeader title={t('dashboard.title')} description={t('dashboard.description')} />
 
       {/* Primary KPIs */}
       <div className='grid gap-3 sm:grid-cols-2 lg:grid-cols-4'>
@@ -322,13 +326,13 @@ export default function DashboardPage() {
 
       {/* Active jobs + Activity feed */}
       <div className='grid gap-4 lg:grid-cols-2'>
-        <SectionCard title='Active jobs' icon={Briefcase}>
+        <SectionCard title={t('dashboard.activeJobsSection')} icon={Briefcase}>
           {!activeJobs || activeJobs.length === 0 ? (
             <div className='flex flex-col items-center justify-center gap-2 py-8 text-center'>
               <div className='rounded-full bg-muted p-3'>
                 <Briefcase className='h-5 w-5 text-muted-foreground' />
               </div>
-              <p className='text-sm text-muted-foreground'>No active jobs found</p>
+              <p className='text-sm text-muted-foreground'>{t('dashboard.noActiveJobs')}</p>
             </div>
           ) : (
             <div>
@@ -346,11 +350,11 @@ export default function DashboardPage() {
         </SectionCard>
 
         <SectionCard
-          title='Recent activity'
+          title={t('dashboard.recentActivity')}
           icon={Activity}
           action={
             <button className='text-xs text-muted-foreground transition-colors hover:text-foreground'>
-              Coming soon <ChevronRight className='inline h-3 w-3' />
+              {t('dashboard.comingSoon')} <ChevronRight className='inline h-3 w-3' />
             </button>
           }
         >
@@ -358,7 +362,7 @@ export default function DashboardPage() {
             <div className='rounded-full bg-muted p-3'>
               <Activity className='h-5 w-5 text-muted-foreground' />
             </div>
-            <p className='text-sm text-muted-foreground'>Real-time activity tracking coming soon</p>
+            <p className='text-sm text-muted-foreground'>{t('dashboard.activityTrackingSoon')}</p>
           </div>
         </SectionCard>
       </div>

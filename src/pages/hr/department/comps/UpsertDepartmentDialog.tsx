@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { Department, DepartmentContact } from '@/shared/types/api.ts';
 import { BaseAction, BaseDialog, BaseHeader } from '@/shared/components/dialog';
 import { useMutation } from '@tanstack/react-query';
@@ -18,6 +19,7 @@ interface UpsertDepartmentDialogProps {
 }
 
 const UpsertDepartmentDialog: React.FC<UpsertDepartmentDialogProps> = (props) => {
+  const { t } = useTranslation();
   const { department, onSubmit, onClose } = props;
   const isCreateNew = department == null;
 
@@ -27,12 +29,12 @@ const UpsertDepartmentDialog: React.FC<UpsertDepartmentDialogProps> = (props) =>
         ? departmentService.create(payload) 
         : departmentService.update(department.id, payload),
     onSuccess: () => {
-      toast.success(isCreateNew ? 'Tạo phòng ban thành công' : 'Cập nhật phòng ban thành công');
+      toast.success(isCreateNew ? t('departments.created') : t('departments.updated'));
       onSubmit();
       onClose();
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Thao tác thất bại');
+      toast.error(error.message || t('common.operationFailed'));
     }
   });
 
@@ -109,12 +111,12 @@ const UpsertDepartmentDialog: React.FC<UpsertDepartmentDialogProps> = (props) =>
     <BaseDialog
       isLoading={isLoading}
       onDismiss={() => onClose(undefined)}
-      header={<BaseHeader title={isCreateNew ? 'Create Department' : 'Edit Department'} />}
+      header={<BaseHeader title={isCreateNew ? t('departments.createTitle') : t('departments.editTitle')} />}
       body={
         <div className='grid gap-4'>
           <AppInput
-            label='Department name'
-            placeholder='Engineering'
+            label={t('departments.nameLabel')}
+            placeholder={t('departments.namePlaceholder')}
             value={form.values.name}
             onTextUpdate={(next) => void form.updateFieldValue('name', next, true)}
             isReadonly={isLoading}
@@ -124,8 +126,8 @@ const UpsertDepartmentDialog: React.FC<UpsertDepartmentDialogProps> = (props) =>
           />
 
           <AppInput
-            label='Department code'
-            placeholder='ENG'
+            label={t('departments.codeLabel')}
+            placeholder={t('departments.codePlaceholder')}
             value={form.values.code}
             onTextUpdate={(next) => void form.updateFieldValue('code', next, true)}
             isReadonly={isLoading}
@@ -135,8 +137,8 @@ const UpsertDepartmentDialog: React.FC<UpsertDepartmentDialogProps> = (props) =>
           />
 
           <AppInput
-            label='Manager'
-            placeholder='Manager name'
+            label={t('departments.managerLabel')}
+            placeholder={t('departments.managerPlaceholder')}
             value={form.values.manager}
             onTextUpdate={(next) => void form.updateFieldValue('manager', next, true)}
             isReadonly={isLoading}
@@ -147,8 +149,8 @@ const UpsertDepartmentDialog: React.FC<UpsertDepartmentDialogProps> = (props) =>
 
           <div className='grid gap-4 sm:grid-cols-2'>
             <AppInput
-              label='Contact name'
-              placeholder='Primary contact'
+              label={t('departments.contactNameLabel')}
+              placeholder={t('departments.contactPlaceholder')}
               value={form.values.contactName}
               onTextUpdate={(next) => void form.updateFieldValue('contactName', next, true)}
               isReadonly={isLoading}
@@ -157,8 +159,8 @@ const UpsertDepartmentDialog: React.FC<UpsertDepartmentDialogProps> = (props) =>
               errorText={form.getFormErrorMessage('contactName')}
             />
             <AppInput
-              label='Contact email'
-              placeholder='email@company.com'
+              label={t('departments.contactEmailLabel')}
+              placeholder={t('departments.emailPlaceholder')}
               value={form.values.contactEmail}
               onTextUpdate={(next) => void form.updateFieldValue('contactEmail', next, true)}
               isReadonly={isLoading}
@@ -169,8 +171,8 @@ const UpsertDepartmentDialog: React.FC<UpsertDepartmentDialogProps> = (props) =>
           </div>
 
           <AppInput
-            label='Contact phone'
-            placeholder='090xxxxxxx'
+            label={t('departments.contactPhoneLabel')}
+            placeholder={t('departments.phonePlaceholder')}
             value={form.values.contactPhone}
             onTextUpdate={(next) => void form.updateFieldValue('contactPhone', next, true)}
             isReadonly={isLoading}
@@ -184,13 +186,13 @@ const UpsertDepartmentDialog: React.FC<UpsertDepartmentDialogProps> = (props) =>
         <BaseAction
           actions={[
             {
-              title: 'Cancel',
+              title: t('common.cancel'),
               color: 'danger-outline',
               actionCallback: () => onClose(undefined),
               disabled: isLoading,
             },
             {
-              title: isCreateNew ? 'Create' : 'Save',
+              title: isCreateNew ? t('common.create') : t('common.save'),
               color: 'primary',
               actionCallback: () => void form.submitForm(),
               disabled: isLoading,

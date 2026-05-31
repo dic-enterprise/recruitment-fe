@@ -1,5 +1,6 @@
 import { Outlet } from 'react-router-dom';
 import AppSidebar from './AppSidebar.tsx';
+import { LanguageSwitcher } from './LanguageSwitcher';
 import { useState } from 'react';
 import { cn } from '../lib/utils.ts';
 
@@ -16,6 +17,9 @@ export default function AppLayout() {
           collapsed ? 'ml-16' : 'ml-64',
         )}
       >
+        <div className='mb-4 flex justify-end'>
+          <LanguageSwitcher />
+        </div>
         <Outlet />
       </main>
     </div>

@@ -180,9 +180,12 @@ All API responses are wrapped in a standard `CodeResponse` object.
   - **Errors:** `404` candidate/CV not found (`401` / `403` khi bật auth).
   - **Example:** `GET /v1/candidates/6/cv/download` with `Authorization: Bearer …`
 - **POST /candidates/upload**
-  - Multipart/form-data: `files` — one or more **PDF** files (same field name repeated, or array).
+  - Multipart/form-data:
+    - `files` — one or more **PDF** files (same field name repeated, or array). Required.
+    - `jobIds` — optional; repeat field per job id. When present, after each `EXTRACT_CV` **completes successfully** (`extractStatus = COMPLETE`), enqueue `MATCH_JOB` for every `(candidate, jobId)` pair. Candidates with extract **FAILED** are skipped (no match tasks). See [phase2/api-contract.md](./phase2/api-contract.md) §2.1.1.
+    - `source` — optional string (e.g. `HR_UPLOAD`).
   - Max **10MB** per file, **100MB** total request size.
-  - Returns `CodeResponse<List<Candidate>>` — one candidate record per file; each enqueues `EXTRACT_CV`.
+  - Returns `CodeResponse<UploadCandidatesResponse>` — see Phase 2 doc. Legacy: plain `List<Candidate>` still accepted by FE.
   - Errors: `400` if no files, empty files only, or any non-PDF.
 
 #### CV file preview rules (browser-inline)
@@ -232,8 +235,8 @@ The frontend treats a CV as previewable only when the browser can render it inli
     }
     ```
 - **POST /matches/trigger**
-  - Body: `{ "jobId": "number", "candidateIds": ["number"] }`
-  - Enqueues `MATCH_JOB` tasks (async AI scoring). Returns `CodeResponse<Void>` immediately.
+  - Body (Phase 2): `{ "jobIds": ["number"], "candidateIds": ["number"] }` — cartesian enqueue `MATCH_JOB`. Legacy: `{ "jobId": number, "candidateIds": [...] }`.
+  - Enqueues `MATCH_JOB` only for candidates with `extractStatus = COMPLETE`. Skips others; response `TriggerMatchResponse` with `matchTasksQueued`, `skippedCandidateIds`. See [phase2/api-contract.md](./phase2/api-contract.md) §2.1.1, §2.6.
 
 #### `queue_tasks` locking (internal)
 
