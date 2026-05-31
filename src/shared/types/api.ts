@@ -401,3 +401,51 @@ export interface OnboardConfirmResponse {
   plan: OnboardPlan;
   process: Pick<InterviewProcess, 'id' | 'status'>;
 }
+
+// Phase 5 — Auth & Users
+export type UserRole = 'ADMIN' | 'HR';
+export type LoginType = 'DB' | 'SSO';
+
+export interface LoginRequest {
+  username: string;
+  password: string;
+}
+
+export interface LoginResponse {
+  accessToken: string;
+  tokenType: 'Bearer';
+  expiresInSeconds: number;
+  userId: number;
+  username: string;
+  displayName: string;
+  role: UserRole;
+}
+
+export interface CurrentUser {
+  userId: number;
+  username: string;
+  displayName: string;
+  role: UserRole;
+}
+
+export interface AppUserRequest {
+  username: string;
+  fullName: string;
+  email: string;
+  password?: string;
+  loginType: LoginType;
+  role?: UserRole;
+  enabled?: boolean;
+}
+
+export interface AppUser {
+  id: number;
+  username: string;
+  fullName: string;
+  email: string;
+  loginType: LoginType;
+  role: UserRole;
+  enabled: boolean;
+  createdAt: string;
+  updatedAt: string;
+}

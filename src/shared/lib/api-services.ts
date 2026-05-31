@@ -36,7 +36,74 @@ import {
   OnboardPlan,
   UpsertOnboardRequest,
   OnboardConfirmResponse,
+  LoginRequest,
+  LoginResponse,
+  CurrentUser,
+  AppUser,
+  AppUserRequest,
 } from '../types/api';
+
+export const authService = {
+  login: async (body: LoginRequest): Promise<LoginResponse> => {
+    try {
+      return await apiClient.post('/auth/login', body);
+    } catch (error) {
+      console.error('Failed to login:', error);
+      throw error;
+    }
+  },
+  me: async (): Promise<CurrentUser> => {
+    try {
+      return await apiClient.get('/auth/me');
+    } catch (error) {
+      console.error('Failed to fetch current user:', error);
+      throw error;
+    }
+  },
+};
+
+export const userService = {
+  getAll: async (): Promise<AppUser[]> => {
+    try {
+      return await apiClient.get('/users');
+    } catch (error) {
+      console.error('Failed to fetch users:', error);
+      throw error;
+    }
+  },
+  getById: async (id: number): Promise<AppUser> => {
+    try {
+      return await apiClient.get(`/users/${id}`);
+    } catch (error) {
+      console.error(`Failed to fetch user ${id}:`, error);
+      throw error;
+    }
+  },
+  create: async (body: AppUserRequest): Promise<AppUser> => {
+    try {
+      return await apiClient.post('/users', body);
+    } catch (error) {
+      console.error('Failed to create user:', error);
+      throw error;
+    }
+  },
+  update: async (id: number, body: AppUserRequest): Promise<AppUser> => {
+    try {
+      return await apiClient.put(`/users/${id}`, body);
+    } catch (error) {
+      console.error(`Failed to update user ${id}:`, error);
+      throw error;
+    }
+  },
+  delete: async (id: number): Promise<void> => {
+    try {
+      await apiClient.delete(`/users/${id}`);
+    } catch (error) {
+      console.error(`Failed to delete user ${id}:`, error);
+      throw error;
+    }
+  },
+};
 
 export const departmentService = {
   getAll: async (): Promise<Department[]> => {

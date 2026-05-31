@@ -11,9 +11,11 @@ import {
   CalendarDays,
   GitBranch,
   ChevronLeft,
+  UserCog,
 } from 'lucide-react';
 import { SetStateAction } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '@/shared/context/auth-context';
 
 const hrLinks = [
   { to: '/hr/dashboard', labelKey: 'nav.dashboard', icon: LayoutDashboard },
@@ -28,6 +30,7 @@ const hrLinks = [
 const adminLinks = [
   { to: '/admin/extract-errors', labelKey: 'nav.extractErrors', icon: AlertTriangle },
   { to: '/admin/ai-config', labelKey: 'nav.aiConfig', icon: Settings },
+  { to: '/admin/users', labelKey: 'nav.userManagement', icon: UserCog, adminOnly: true },
 ];
 interface NavLinkProps {
   to: string;
@@ -81,8 +84,11 @@ interface AppSideBarProps {
 export default function AppSidebar(props: AppSideBarProps) {
   const { t } = useTranslation();
   const location = useLocation();
+  const { user } = useAuth();
 
   const { collapsed, setCollapsed } = props;
+
+  const visibleAdminLinks = adminLinks.filter((link) => !link.adminOnly || user?.role === 'ADMIN');
   
   return (
     <aside
@@ -151,7 +157,7 @@ export default function AppSidebar(props: AppSideBarProps) {
         </p>
 
         <div className='space-y-1'>
-          {adminLinks.map((link) => (
+          {visibleAdminLinks.map((link) => (
             <NavLink
               key={link.to}
               to={link.to}
