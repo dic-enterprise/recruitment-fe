@@ -48,7 +48,11 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter>
+      <BrowserRouter
+        basename={
+          import.meta.env.BASE_URL === '/' ? undefined : import.meta.env.BASE_URL.replace(/\/$/, '')
+        }
+      >
         <Routes>
           <Route path='/' element={<Index />} />
           {/* Public routes - no sidebar */}
