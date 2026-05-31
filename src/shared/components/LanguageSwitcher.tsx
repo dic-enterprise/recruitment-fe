@@ -6,6 +6,8 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
 } from '@/shared/components/ui/dropdown-menu';
 import { setAppLocale, SUPPORTED_LOCALES, type AppLocale } from '@/shared/i18n';
 
@@ -15,11 +17,34 @@ const LOCALE_LABEL_KEYS: Record<AppLocale, 'common.vietnamese' | 'common.english
   'zh-TW': 'common.traditionalChinese',
 };
 
+function useCurrentLocale(): AppLocale {
+  const { i18n } = useTranslation();
+  return (SUPPORTED_LOCALES.includes(i18n.language as AppLocale) ? i18n.language : 'vi') as AppLocale;
+}
+
+export function LanguageMenuItems() {
+  const { t } = useTranslation();
+  const current = useCurrentLocale();
+
+  return (
+    <>
+      <DropdownMenuLabel className='text-xs text-muted-foreground'>{t('common.language')}</DropdownMenuLabel>
+      {SUPPORTED_LOCALES.map((locale) => (
+        <DropdownMenuItem
+          key={locale}
+          onClick={() => setAppLocale(locale)}
+          className={current === locale ? 'font-medium' : ''}
+        >
+          {t(LOCALE_LABEL_KEYS[locale])}
+        </DropdownMenuItem>
+      ))}
+    </>
+  );
+}
+
 export function LanguageSwitcher() {
-  const { t, i18n } = useTranslation();
-  const current = (SUPPORTED_LOCALES.includes(i18n.language as AppLocale)
-    ? i18n.language
-    : 'vi') as AppLocale;
+  const { t } = useTranslation();
+  const current = useCurrentLocale();
 
   return (
     <DropdownMenu>
@@ -30,15 +55,7 @@ export function LanguageSwitcher() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align='end'>
-        {SUPPORTED_LOCALES.map((locale) => (
-          <DropdownMenuItem
-            key={locale}
-            onClick={() => setAppLocale(locale)}
-            className={current === locale ? 'font-medium' : ''}
-          >
-            {t(LOCALE_LABEL_KEYS[locale])}
-          </DropdownMenuItem>
-        ))}
+        <LanguageMenuItems />
       </DropdownMenuContent>
     </DropdownMenu>
   );

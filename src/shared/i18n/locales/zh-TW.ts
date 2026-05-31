@@ -30,8 +30,8 @@ const zhTW = {
     expandSidebar: '展開側邊欄',
     collapseSidebar: '收合側邊欄',
     language: '語言',
-    vietnamese: 'Tiếng Việt',
-    english: 'English',
+    vietnamese: '越南語',
+    english: '英語',
     traditionalChinese: '繁體中文（台灣）',
   },
   nav: {

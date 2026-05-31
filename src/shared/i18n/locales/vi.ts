@@ -31,8 +31,8 @@ const vi = {
     collapseSidebar: 'Thu gọn sidebar',
     language: 'Ngôn ngữ',
     vietnamese: 'Tiếng Việt',
-    english: 'English',
-    traditionalChinese: '繁體中文（台灣）',
+    english: 'Tiếng Anh',
+    traditionalChinese: 'Tiếng Trung (Đài Loan)',
   },
   nav: {
     brand: 'RecruitPro',

@@ -30,7 +30,7 @@ const en = {
     expandSidebar: 'Expand sidebar',
     collapseSidebar: 'Collapse sidebar',
     language: 'Language',
-    vietnamese: 'Tiếng Việt',
+    vietnamese: 'Vietnamese',
     english: 'English',
     traditionalChinese: 'Traditional Chinese (Taiwan)',
   },
