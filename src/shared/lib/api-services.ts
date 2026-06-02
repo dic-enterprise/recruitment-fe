@@ -27,6 +27,8 @@ import {
   InterviewProcessListParams,
   UploadCandidatesResponse,
   UploadCandidatesOptions,
+  PublicApplyCandidateRequest,
+  PublicApplyCandidateResponse,
   TriggerMatchRequest,
   TriggerMatchResponse,
   JobOffer,
@@ -173,6 +175,14 @@ export const jobService = {
       throw error;
     }
   },
+  delete: async (id: string): Promise<void> => {
+    try {
+      await apiClient.delete(`/jobs/${id}`);
+    } catch (error) {
+      console.error(`Failed to delete job ${id}:`, error);
+      throw error;
+    }
+  },
 };
 
 export const candidateService = {
@@ -235,6 +245,14 @@ export const candidateService = {
       return await apiClient.get(`/candidates/${id}/cv/download`, { responseType: 'blob' });
     } catch (error) {
       console.error(`Failed to download CV for candidate ${id}:`, error);
+      throw error;
+    }
+  },
+  applyPublic: async (body: PublicApplyCandidateRequest): Promise<PublicApplyCandidateResponse> => {
+    try {
+      return await apiClient.post('/candidates/apply', body);
+    } catch (error) {
+      console.error('Failed to submit public candidate form:', error);
       throw error;
     }
   },

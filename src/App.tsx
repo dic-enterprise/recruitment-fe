@@ -20,6 +20,9 @@ import CandidateDetailPage from './pages/hr/CandidateDetailPage';
 import SchedulePage from './pages/hr/SchedulePage';
 import PublicUploadPage from './pages/public/PublicUploadPage';
 import PublicCVStatusPage from './pages/public/PublicCVStatusPage';
+import PublicJobsPage from './pages/public/PublicJobsPage';
+import PublicApplySuccessPage from './pages/public/PublicApplySuccessPage';
+import PublicJobDetailPage from './pages/public/PublicJobDetailPage';
 import ExtractErrorsPage from './pages/admin/ExtractErrorsPage';
 import AIConfigPage from './pages/admin/AIConfigPage';
 import UsersPage from './pages/admin/UsersPage';
@@ -61,6 +64,9 @@ const App = () => (
             {/* Public routes - no sidebar */}
             <Route path='/public/upload' element={<PublicUploadPage />} />
             <Route path='/public/cv/:candidateId/status' element={<PublicCVStatusPage />} />
+            <Route path='/public/jobs' element={<PublicJobsPage />} />
+            <Route path='/public/jobs/:jobId' element={<PublicJobDetailPage />} />
+            <Route path='/public/apply/success/:candidateId' element={<PublicApplySuccessPage />} />
             {/* Protected HR / Admin routes */}
             <Route
               element={

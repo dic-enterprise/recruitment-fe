@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Input } from '@/shared/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select';
@@ -10,8 +10,19 @@ import PageHeader from '@/shared/components/PageHeader';
 import { JobFormDialog } from '@/shared/components/hr/JobFormDialog';
 import { BaseTable, type Column } from '@/shared/components/BaseTable';
 import useModal from '@/shared/hooks/useModal';
-import { Plus, Search, Edit } from 'lucide-react';
+import { Plus, Search, Edit, Trash2 } from 'lucide-react';
 import type { Job, JobStatus } from '@/shared/types/api';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/shared/components/ui/alert-dialog';
+import { toast } from 'sonner';
 
 export default function JobsPage() {
   const { t } = useTranslation();
@@ -19,6 +30,7 @@ export default function JobsPage() {
   const [statusFilter, setStatusFilter] = useState<JobStatus | 'ALL'>('ALL');
   const [deptFilter, setDeptFilter] = useState<string>('ALL');
   const [keyword, setKeyword] = useState('');
+  const [deleteTarget, setDeleteTarget] = useState<Job | null>(null);
 
   const { data: departments } = useQuery({
     queryKey: ['departments'],
@@ -35,6 +47,17 @@ export default function JobsPage() {
   });
 
   const [modalNode, openModal] = useModal();
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => jobService.delete(id),
+    onSuccess: () => {
+      toast.success(t('jobs.deleted'));
+      queryClient.invalidateQueries({ queryKey: ['jobs'] });
+      setDeleteTarget(null);
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || t('jobs.deleteFailed'));
+    },
+  });
 
   const openCreateJob = () => {
     void openModal((close) => (
@@ -90,12 +113,17 @@ export default function JobsPage() {
     {
       header: t('common.actions'),
       key: 'actions',
-      width: '100px',
+      width: '170px',
       render: (job) => (
-        <Button variant='outline' size='sm' onClick={() => openEditJob(job)}>
-          <Edit className='mr-1.5 h-3.5 w-3.5' />
-          {t('jobs.edit')}
-        </Button>
+        <div className='flex gap-2'>
+          <Button variant='outline' size='sm' onClick={() => openEditJob(job)}>
+            <Edit className='mr-1.5 h-3.5 w-3.5' />
+            {t('jobs.edit')}
+          </Button>
+          <Button variant='outline' size='sm' onClick={() => setDeleteTarget(job)}>
+            <Trash2 className='h-3.5 w-3.5 text-destructive' />
+          </Button>
+        </div>
       ),
     },
   ];
@@ -160,6 +188,27 @@ export default function JobsPage() {
         emptyMessage={t('jobs.empty')}
         showIndex={true}
       />
+
+      <AlertDialog open={deleteTarget != null} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('jobs.deleteConfirmTitle')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('jobs.deleteConfirmMessage', { title: deleteTarget?.title ?? '' })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteMutation.isPending}>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={deleteMutation.isPending}
+              onClick={() => deleteTarget && deleteMutation.mutate(String(deleteTarget.id))}
+              className='bg-destructive text-destructive-foreground hover:bg-destructive/90'
+            >
+              {t('common.delete')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

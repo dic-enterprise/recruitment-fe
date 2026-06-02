@@ -180,6 +180,21 @@ export interface UploadCandidatesOptions {
   source?: string;
 }
 
+export interface PublicApplyCandidateRequest {
+  jobId: number;
+  name: string;
+  email: string;
+  phone?: string;
+  experience: string;
+  skills: string[];
+  source?: string;
+}
+
+export interface PublicApplyCandidateResponse {
+  candidate: Candidate;
+  matchTasksQueued?: number;
+}
+
 /** POST /matches/trigger — enqueue MATCH_JOB (cartesian candidate × job) */
 export interface TriggerMatchRequest {
   jobIds: number[];

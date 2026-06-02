@@ -133,6 +133,10 @@ export default function CandidateDetailPage() {
 
   const cvBusy = cvAction != null;
   const canPreviewCv = candidate.cvPreviewable ?? isCvBrowserPreviewable(candidate.cvFileName);
+  const hasCvFile =
+    !!candidate.cvFileName &&
+    candidate.cvFileName.trim().length > 0 &&
+    candidate.cvFileName !== 'FORM_APPLY';
 
   // Hiện tên file (bỏ extension) nếu extract FAILED và không có name
   const displayName =
@@ -150,32 +154,39 @@ export default function CandidateDetailPage() {
         actions={
           <div className='flex items-center gap-2'>
             {/* CV dropdown */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant='outline' disabled={cvBusy} className='max-w-[240px] gap-1.5 font-mono text-xs'>
-                  {cvBusy ? (
-                    <Loader2 className='h-3.5 w-3.5 shrink-0 animate-spin' />
-                  ) : (
-                    <FileText className='h-3.5 w-3.5 shrink-0' />
+            {hasCvFile ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant='outline' disabled={cvBusy} className='max-w-[240px] gap-1.5 font-mono text-xs'>
+                    {cvBusy ? (
+                      <Loader2 className='h-3.5 w-3.5 shrink-0 animate-spin' />
+                    ) : (
+                      <FileText className='h-3.5 w-3.5 shrink-0' />
+                    )}
+                    <span className='truncate'>{candidate.cvFileName}</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align='end' className='w-48'>
+                  {canPreviewCv && candidateId && (
+                    <DropdownMenuItem asChild disabled={cvBusy}>
+                      <a href={getCvPreviewUrl(candidateId)} target='_blank' rel='noopener noreferrer'>
+                        <Eye className='mr-2 h-4 w-4' />
+                        {t('candidates.previewCv')}
+                      </a>
+                    </DropdownMenuItem>
                   )}
-                  <span className='truncate'>{candidate.cvFileName}</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align='end' className='w-48'>
-                {canPreviewCv && candidateId && (
-                  <DropdownMenuItem asChild disabled={cvBusy}>
-                    <a href={getCvPreviewUrl(candidateId)} target='_blank' rel='noopener noreferrer'>
-                      <Eye className='mr-2 h-4 w-4' />
-                      {t('candidates.previewCv')}
-                    </a>
+                  <DropdownMenuItem onClick={() => void handleDownloadCv()} disabled={cvBusy}>
+                    <Download className='mr-2 h-4 w-4' />
+                    {t('candidates.downloadCv')}
                   </DropdownMenuItem>
-                )}
-                <DropdownMenuItem onClick={() => void handleDownloadCv()} disabled={cvBusy}>
-                  <Download className='mr-2 h-4 w-4' />
-                  {t('candidates.downloadCv')}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Button variant='outline' disabled className='max-w-[240px] gap-1.5 font-mono text-xs'>
+                <FileText className='h-3.5 w-3.5 shrink-0' />
+                <span className='truncate'>{t('candidates.noCvFile')}</span>
+              </Button>
+            )}
 
             {/* Back */}
             <Button variant='outline' asChild className='gap-1.5'>
@@ -221,7 +232,12 @@ export default function CandidateDetailPage() {
           {candidate.phone && (
             <InfoRow icon={<Phone className='h-3.5 w-3.5' />} label={t('candidates.phone')} value={candidate.phone} />
           )}
-          <InfoRow icon={<FileText className='h-3.5 w-3.5' />} label={t('candidates.cvFile')} value={candidate.cvFileName} mono />
+          <InfoRow
+            icon={<FileText className='h-3.5 w-3.5' />}
+            label={t('candidates.cvFile')}
+            value={hasCvFile ? candidate.cvFileName : t('candidates.noCvFile')}
+            mono={hasCvFile}
+          />
           <InfoRow
             icon={<span className='font-mono text-[10px] leading-none'>AT</span>}
             label={t('candidates.uploaded')}
