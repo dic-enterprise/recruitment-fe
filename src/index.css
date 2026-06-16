@@ -1,38 +1,41 @@
+@import url('https://fonts.bunny.net/css?family=plus-jakarta-sans:400,500,600,700');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    --background: 210 20% 98%;
-    --foreground: 215 25% 15%;
+    --background: 210 25% 98%;
+    --foreground: 215 28% 14%;
 
     --card: 0 0% 100%;
-    --card-foreground: 215 25% 15%;
+    --card-foreground: 215 28% 14%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 215 25% 15%;
+    --popover-foreground: 215 28% 14%;
 
-    --primary: 210 80% 45%;
+    /* Accton brand blue #2463A8 */
+    --primary: 210 64% 40%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 20% 94%;
-    --secondary-foreground: 215 25% 20%;
+    --secondary: 210 22% 94%;
+    --secondary-foreground: 215 25% 22%;
 
-    --muted: 210 15% 95%;
-    --muted-foreground: 215 10% 45%;
+    --muted: 210 18% 95%;
+    --muted-foreground: 215 12% 42%;
 
-    --accent: 170 60% 42%;
+    --accent: 210 64% 40%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 214 20% 90%;
-    --input: 214 20% 90%;
-    --ring: 210 80% 45%;
+    --border: 214 22% 89%;
+    --input: 214 22% 89%;
+    --ring: 210 64% 40%;
 
-    --radius: 0.5rem;
+    --radius: 0.625rem;
 
     --success: 142 60% 40%;
     --success-foreground: 0 0% 100%;
@@ -64,7 +67,7 @@
     --secondary-foreground: 210 20% 90%;
     --muted: 215 15% 18%;
     --muted-foreground: 215 10% 55%;
-    --accent: 170 60% 42%;
+    --accent: 210 64% 45%;
     --accent-foreground: 0 0% 100%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
@@ -88,12 +91,18 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
     font-family:
-      'Inter',
+      'Plus Jakarta Sans',
       system-ui,
       -apple-system,
       sans-serif;
+  }
+
+  h1,
+  h2,
+  h3 {
+    @apply tracking-tight;
   }
 }
 
@@ -104,6 +113,17 @@
 
   .animate-slide-up {
     animation: slideUp 0.4s ease-out;
+  }
+
+  .public-grid-bg {
+    background-image:
+      linear-gradient(to right, hsl(var(--border) / 0.55) 1px, transparent 1px),
+      linear-gradient(to bottom, hsl(var(--border) / 0.55) 1px, transparent 1px);
+    background-size: 48px 48px;
+  }
+
+  .public-section-label {
+    @apply text-xs font-semibold uppercase tracking-[0.14em] text-primary;
   }
 }
 

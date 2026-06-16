@@ -1,6 +1,8 @@
-import { useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Button } from '@/shared/components/ui/button';
+import PublicPageLayout from '@/shared/components/public/PublicPageLayout';
 
 const NotFound = () => {
   const { t } = useTranslation();
@@ -11,15 +13,16 @@ const NotFound = () => {
   }, [location.pathname]);
 
   return (
-    <div className='flex min-h-screen items-center justify-center bg-muted'>
-      <div className='text-center'>
-        <h1 className='mb-4 text-4xl font-bold'>{t('notFound.title')}</h1>
-        <p className='mb-4 text-xl text-muted-foreground'>{t('notFound.message')}</p>
-        <a href='/' className='text-primary underline hover:text-primary/90'>
-          {t('notFound.backHome')}
-        </a>
+    <PublicPageLayout mainClassName='flex items-center justify-center p-4'>
+      <div className='text-center animate-slide-up'>
+        <p className='text-7xl font-bold text-primary/20'>404</p>
+        <h1 className='mt-2 text-2xl font-bold text-foreground'>{t('notFound.title')}</h1>
+        <p className='mt-2 text-muted-foreground'>{t('notFound.message')}</p>
+        <Button asChild className='mt-6'>
+          <Link to='/'>{t('notFound.backHome')}</Link>
+        </Button>
       </div>
-    </div>
+    </PublicPageLayout>
   );
 };
 

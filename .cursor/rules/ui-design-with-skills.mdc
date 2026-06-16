@@ -1,0 +1,75 @@
+---
+description: "Mandatory UI design workflow — read and apply .cursor/skills before building or redesigning any user-facing interface (landing pages, public pages, marketing UI)."
+globs:
+  - "src/pages/**"
+  - "src/shared/components/**"
+  - "src/pages/public/**"
+  - "src/pages/Index.tsx"
+alwaysApply: false
+---
+
+# UI Design — Must Use Project Skills
+
+When the task involves **designing, redesigning, or styling user-facing UI** (landing pages, public career pages, marketing sections, portfolios, hero layouts), you **MUST** follow the project skill before writing or editing code.
+
+## Required skill
+
+| Item | Path |
+|------|------|
+| Skill file | `.cursor/skills/SKILL.md` |
+| Skill name | `design-taste-frontend` |
+
+**Do not improvise UI aesthetics without reading this skill first.**
+
+## When this rule applies
+
+- New public/marketing pages (e.g. `/`, `/public/jobs`, job detail, apply flow)
+- Landing page sections (About us, Career opportunities, hero, footer)
+- Visual redesigns of existing pages
+- Any task where the user asks to "make it beautiful", "landing page style", or "design UI"
+
+## Mandatory workflow
+
+1. **Read** `.cursor/skills/SKILL.md` in full (or the relevant sections if the task is narrow).
+2. **Declare Design Read** (Section 0.B of the skill) in one line before coding:
+   - Page kind, audience, vibe, design system direction.
+3. **Set dials** from the skill (Section 1): `DESIGN_VARIANCE`, `MOTION_INTENSITY`, `VISUAL_DENSITY` — justify from the brief, do not use defaults blindly.
+4. **Match project stack** (Section 3 of the skill):
+   - This repo uses React + Vite + Tailwind + shadcn/ui + Lucide (existing convention).
+   - Reuse existing components under `src/shared/components/ui/` and patterns from HR/public pages.
+5. **Run Pre-Flight Check** (Section 14 of the skill) before considering the UI task done.
+
+## Out of scope for this skill (do not force taste-skill on)
+
+- HR dashboard / admin tables / dense data UI (`/hr/**`, `/admin/**`)
+- API services, types, auth logic
+- i18n-only or copy-only changes with no layout impact
+
+For dashboard/admin UI, follow existing `AppLayout`, `PageHeader`, `BaseTable`, and shadcn patterns in the codebase instead.
+
+## Integration with this repo
+
+| Area | Convention |
+|------|------------|
+| Public routes | `src/pages/public/*`, no sidebar, light theme unless brief says otherwise |
+| Landing | `src/pages/Index.tsx` — About us + Career opportunities |
+| Shared apply form | `PublicApplyJobDialog.tsx` — reuse, do not duplicate |
+| i18n | Add keys to `src/shared/i18n/locales/{en,vi,zh-TW}.ts` |
+| API | `src/shared/lib/api-services.ts` — no UI logic in services |
+
+## Anti-patterns (forbidden without explicit user request)
+
+- Shipping generic AI-slop UI (purple gradients, 3 equal feature cards, centered dark hero) — see skill Section 9
+- Creating a second apply-form implementation instead of reusing `PublicApplyJobDialog`
+- Hardcoding long marketing copy in components without i18n keys
+- Ignoring the skill because "this is a small change"
+
+## Quick activation
+
+In chat, you may also invoke:
+
+```
+@.cursor/skills/SKILL.md
+```
+
+or reference skill name: `design-taste-frontend`
